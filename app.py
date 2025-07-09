@@ -7,6 +7,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash, ses
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
+# --- CHANGE 1: ADD 'backref' TO IMPORTS ---
 from sqlalchemy.orm import joinedload, backref
 from sqlalchemy import or_, and_, asc
 from flask_socketio import SocketIO, emit, join_room, leave_room, disconnect
@@ -140,7 +141,11 @@ class Notification(db.Model):
     poll_id = db.Column(db.Integer, db.ForeignKey('poll.id'))
     timestamp = db.Column(db.DateTime, index=True, default=lambda: datetime.now(timezone.utc))
     is_read = db.Column(db.Boolean, default=False, nullable=False)
-    actor = db.relationship('User', foreign_keys=[actor_id], backref='notifications_sent')
+    # --- CHANGE 2: MODIFY THE 'actor' RELATIONSHIP ---
+    actor = db.relationship('User', foreign_keys=[actor_id],
+                          backref=backref('notifications_sent',
+                                          lazy='dynamic',
+                                          cascade='all, delete-orphan'))
     poll = db.relationship('Poll', backref=backref('notifications', lazy='dynamic', cascade='all, delete-orphan'))
 
 def award_points(user, points_to_add):
@@ -181,6 +186,8 @@ def admin_required(f):
         if not g.user or not g.user.is_admin: flash("You do not have permission for this.", "danger"); return redirect(url_for('home'))
         return f(*args, **kwargs)
     return decorated_function
+
+# --- ALL ROUTE FUNCTIONS BELOW THIS LINE ARE UNCHANGED EXCEPT for 'delete_user' ---
 
 @app.route('/')
 def home():
@@ -514,7 +521,6 @@ def manage_users():
     users=User.query.order_by(User.id).all()
     return render_template('admin/manage_users.html', users=users)
 
-# === THIS FUNCTION IS THE FIX ===
 @app.route('/admin/user/delete/<int:user_id>', methods=['POST'])
 @admin_required
 def delete_user(user_id):
@@ -541,28 +547,23 @@ def delete_user(user_id):
             db.session.delete(conv)
 
         # C) Manually delete user's votes, likes, and comments on OTHER people's polls.
-        #    The user's own polls (and their comments/votes) will be deleted by the cascade from User->Poll.
         Vote.query.filter_by(user_id=user_id).delete(synchronize_session='fetch')
         PollLike.query.filter_by(user_id=user_id).delete(synchronize_session='fetch')
         CommentLike.query.filter_by(user_id=user_id).delete(synchronize_session='fetch')
         
-        # We need to fetch and delete comments to trigger their cascade rules (for replies, etc.)
         user_comments = Comment.query.filter_by(user_id=user_id).all()
         for comment in user_comments:
             db.session.delete(comment)
         
         # 2. Finally, delete the user object.
-        # ------------------------------------
-        # The cascade="all, delete-orphan" on `user.polls` and `user.notifications_received`
-        # will now automatically handle deleting:
-        #   - The user's polls.
-        #   - All votes, likes, comments, and poll chat messages associated with THOSE polls.
-        #   - All notifications received by the user.
-        
+        #    The cascade rules on the User model will now automatically handle:
+        #    - All polls created by the user (and votes/likes/comments on them).
+        #    - All notifications RECEIVED by the user.
+        #    - All notifications SENT by the user (due to our new backref cascade).
         db.session.delete(user)
         db.session.commit()
         
-        flash(f"User '{user.email}' and all their associated data have been permanently dismissed.", "success")
+        flash(f"User '{user.email}' and all associated data have been permanently dismissed.", "success")
 
     except Exception as e:
         db.session.rollback()
@@ -571,7 +572,7 @@ def delete_user(user_id):
 
     return redirect(url_for('manage_users'))
 
-# --- SOCKET.IO HANDLERS ---
+# --- SOCKET.IO HANDLERS (UNCHANGED) ---
 @socketio.on('connect')
 def handle_connect():
     user_id = session.get('user_id')
