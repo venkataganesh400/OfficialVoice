@@ -7,7 +7,6 @@ from flask import Flask, render_template, request, redirect, url_for, flash, ses
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
-# --- CHANGE 1: ADD 'backref' TO IMPORTS ---
 from sqlalchemy.orm import joinedload, backref
 from sqlalchemy import or_, and_, asc
 from flask_socketio import SocketIO, emit, join_room, leave_room, disconnect
@@ -141,7 +140,6 @@ class Notification(db.Model):
     poll_id = db.Column(db.Integer, db.ForeignKey('poll.id'))
     timestamp = db.Column(db.DateTime, index=True, default=lambda: datetime.now(timezone.utc))
     is_read = db.Column(db.Boolean, default=False, nullable=False)
-    # --- CHANGE 2: MODIFY THE 'actor' RELATIONSHIP ---
     actor = db.relationship('User', foreign_keys=[actor_id],
                           backref=backref('notifications_sent',
                                           lazy='dynamic',
@@ -187,7 +185,20 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-# --- ALL ROUTE FUNCTIONS BELOW THIS LINE ARE UNCHANGED EXCEPT for 'delete_user' ---
+# === START: NEW FEATURE CODE ===
+@app.route('/check-email')
+def check_email():
+    """Checks if an email exists in the database."""
+    email = request.args.get('email', '', type=str)
+    if not email:
+        return jsonify({'exists': False, 'message': 'Email cannot be empty.'})
+
+    user = User.query.filter_by(email=email).first()
+    if user:
+        return jsonify({'exists': True, 'message': 'This email is already registered.'})
+    else:
+        return jsonify({'exists': False, 'message': 'Email is available!'})
+# === END: NEW FEATURE CODE ===
 
 @app.route('/')
 def home():
@@ -224,6 +235,9 @@ def login():
         else: flash('Invalid credentials.', 'danger')
     return render_template('login.html')
 
+# (The rest of your app.py file remains unchanged...)
+# ... all other routes from delete_user down to the end of the file ...
+# (The response is truncated here for brevity, but you should keep the rest of your file as is)
 @app.route('/logout')
 def logout():
     session.clear(); flash("You have been logged out.", "success"); return redirect(url_for('home'))
@@ -534,19 +548,14 @@ def delete_user(user_id):
         return redirect(url_for('manage_users'))
 
     try:
-        # 1. Clean up things not directly cascaded from the User object
-        # -----------------------------------------------------------------
-
-        # A) Manual cleanup of the 'followers' many-to-many table
+        # Clean up non-cascaded items first
         db.session.execute(followers.delete().where(followers.c.follower_id == user_id))
         db.session.execute(followers.delete().where(followers.c.followed_id == user_id))
         
-        # B) Manual cleanup of all direct private messages (this triggers the message cascade)
         conversations_to_delete = Conversation.query.filter(or_(Conversation.user_one_id == user_id, Conversation.user_two_id == user_id)).all()
         for conv in conversations_to_delete:
             db.session.delete(conv)
 
-        # C) Manually delete user's votes, likes, and comments on OTHER people's polls.
         Vote.query.filter_by(user_id=user_id).delete(synchronize_session='fetch')
         PollLike.query.filter_by(user_id=user_id).delete(synchronize_session='fetch')
         CommentLike.query.filter_by(user_id=user_id).delete(synchronize_session='fetch')
@@ -555,11 +564,7 @@ def delete_user(user_id):
         for comment in user_comments:
             db.session.delete(comment)
         
-        # 2. Finally, delete the user object.
-        #    The cascade rules on the User model will now automatically handle:
-        #    - All polls created by the user (and votes/likes/comments on them).
-        #    - All notifications RECEIVED by the user.
-        #    - All notifications SENT by the user (due to our new backref cascade).
+        # Finally, delete the user object. Cascades will handle the rest.
         db.session.delete(user)
         db.session.commit()
         
@@ -572,7 +577,6 @@ def delete_user(user_id):
 
     return redirect(url_for('manage_users'))
 
-# --- SOCKET.IO HANDLERS (UNCHANGED) ---
 @socketio.on('connect')
 def handle_connect():
     user_id = session.get('user_id')
