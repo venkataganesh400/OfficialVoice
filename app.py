@@ -514,6 +514,7 @@ def manage_users():
     users=User.query.order_by(User.id).all()
     return render_template('admin/manage_users.html', users=users)
 
+# === THIS FUNCTION IS THE FIX ===
 @app.route('/admin/user/delete/<int:user_id>', methods=['POST'])
 @admin_required
 def delete_user(user_id):
@@ -525,30 +526,39 @@ def delete_user(user_id):
     if user.is_admin or user.id == g.user.id:
         flash("Admin accounts and your own account cannot be deleted from here.", "danger")
         return redirect(url_for('manage_users'))
-    
+
     try:
-        # Engagements by the user
-        Vote.query.filter_by(user_id=user_id).delete(synchronize_session=False)
-        PollLike.query.filter_by(user_id=user_id).delete(synchronize_session=False)
-        CommentLike.query.filter_by(user_id=user_id).delete(synchronize_session=False)
-        Comment.query.filter_by(user_id=user_id).delete(synchronize_session=False)
+        # 1. Clean up things not directly cascaded from the User object
+        # -----------------------------------------------------------------
 
-        # Chat messages from the user
-        Message.query.filter_by(user_id=user_id).delete(synchronize_session=False)
+        # A) Manual cleanup of the 'followers' many-to-many table
+        db.session.execute(followers.delete().where(followers.c.follower_id == user_id))
+        db.session.execute(followers.delete().where(followers.c.followed_id == user_id))
         
-        # Notifications
-        Notification.query.filter_by(actor_id=user_id).delete(synchronize_session=False)
-        
-        # Conversations involving the user
-        Conversation.query.filter(or_(Conversation.user_one_id == user_id, Conversation.user_two_id == user_id)).delete(synchronize_session=False)
+        # B) Manual cleanup of all direct private messages (this triggers the message cascade)
+        conversations_to_delete = Conversation.query.filter(or_(Conversation.user_one_id == user_id, Conversation.user_two_id == user_id)).all()
+        for conv in conversations_to_delete:
+            db.session.delete(conv)
 
-        # Follower relationships
-        stmt_follower = followers.delete().where(followers.c.follower_id == user_id)
-        db.session.execute(stmt_follower)
-        stmt_followed = followers.delete().where(followers.c.followed_id == user_id)
-        db.session.execute(stmt_followed)
+        # C) Manually delete user's votes, likes, and comments on OTHER people's polls.
+        #    The user's own polls (and their comments/votes) will be deleted by the cascade from User->Poll.
+        Vote.query.filter_by(user_id=user_id).delete(synchronize_session='fetch')
+        PollLike.query.filter_by(user_id=user_id).delete(synchronize_session='fetch')
+        CommentLike.query.filter_by(user_id=user_id).delete(synchronize_session='fetch')
         
-        # Finally, delete the user. The User model's cascades will handle Polls and received Notifications.
+        # We need to fetch and delete comments to trigger their cascade rules (for replies, etc.)
+        user_comments = Comment.query.filter_by(user_id=user_id).all()
+        for comment in user_comments:
+            db.session.delete(comment)
+        
+        # 2. Finally, delete the user object.
+        # ------------------------------------
+        # The cascade="all, delete-orphan" on `user.polls` and `user.notifications_received`
+        # will now automatically handle deleting:
+        #   - The user's polls.
+        #   - All votes, likes, comments, and poll chat messages associated with THOSE polls.
+        #   - All notifications received by the user.
+        
         db.session.delete(user)
         db.session.commit()
         
