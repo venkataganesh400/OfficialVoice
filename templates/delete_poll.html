@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block title %}Delete Poll{% endblock %}
+{% block content %}
+<div class="container" style="max-width: 550px; padding: 4rem 1rem;">
+    <div class="card">
+        <h1 style="text-align:center; margin-bottom: 2rem;">Delete Poll</h1>
+        <p>Are you sure you want to permanently delete this poll? This action cannot be undone and will deduct 5 points.</p>
+        <p><strong>{{ poll.topic }}</strong></p>
+        <hr style="border:0; border-top:1px solid var(--border-color); margin: 1.5rem 0;">
+        <form method="POST">
+            <div class="form-group"><label for="password">To confirm, please enter your password:</label><input type="password" name="password" id="password" required></div>
+            <button type="submit" class="btn btn-danger btn-block">Yes, Delete This Poll Forever</button>
+            <a href="{{ url_for('poll_view', poll_id=poll.id) }}" style="display:block; text-align:center; margin-top:1rem;">Cancel</a>
+        </form>
+    </div>
+</div>
+{% endblock %}

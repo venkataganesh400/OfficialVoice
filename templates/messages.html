@@ -1,0 +1,45 @@
+{% extends 'inbox.html' %}
+{% block title %}Chat with {{ other_user.first_name }}{% endblock %}
+
+{% block chat_window %}
+<div class="chat-window">
+    <div class="chat-header">
+        <a href="{{ url_for('inbox') }}" class="back-btn"><i class="fas fa-chevron-left"></i></a>
+        <a href="{{ url_for('public_profile', voter_id=other_user.voter_id) }}" style="display: contents; text-decoration: none; color: inherit;">
+            {% if other_user.profile_image_url %}
+                <img src="{{ other_user.profile_image_url }}" alt="">
+            {% else %}
+                <div class="icon" style="background:var(--bg-main);color:var(--secondary);display:flex;align-items:center;justify-content:center;"><i class="fas fa-user"></i></div>
+            {% endif %}
+            <div class="chat-header-info">
+                <h4>{{ other_user.first_name }} {{ other_user.last_name }}</h4>
+            </div>
+        </a>
+    </div>
+
+    <div class="message-list" id="message-list">
+        {% for msg in messages %}
+        <div class="message {% if msg.user_id == g.user.id %}sent{% else %}received{% endif %}">
+            <div class="message-bubble">{{ msg.text | safe }}</div>
+            <div class="message-meta">
+                <span title="{{ msg.timestamp.strftime('%Y-%m-%d %H:%M:%S UTC') }}">{{ moment(msg.timestamp).fromNow() }}</span>
+            </div>
+        </div>
+        {% else %}
+        <div style="margin: auto; text-align: center; color: var(--text-gray);">
+            <p>This is the beginning of your conversation with {{ other_user.first_name }}.</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <form class="message-form" id="message-form">
+        <input type="text" id="message-input" placeholder="Type a message..." autocomplete="off" required>
+        <button type="submit" class="btn" title="Send message"><i class="fas fa-paper-plane"></i></button>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+{% include 'js_snippets/chat_scripts.html' %}
+{% endblock %}

@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block title %}Admin Dashboard{% endblock %}
+{% block content %}
+<div class="container page-header"><h1>Admin Control Panel</h1></div>
+<div class="container">
+    <div class="feature-grid">
+        <div class="card feature-card"><h3>{{stats.active_users}}</h3><p>Active Users</p></div>
+        <div class="card feature-card"><h3>{{stats.total_polls}}</h3><p>Total Polls</p></div>
+        <div class="card feature-card"><h3>{{stats.pending_deletion}}</h3><p>Users Pending Deletion</p></div>
+    </div>
+    <div class="card" style="margin-top:2rem;"><h3>Quick Actions</h3><a href="{{url_for('manage_users')}}" class="btn">Manage Users</a></div>
+</div>
+{% endblock %}

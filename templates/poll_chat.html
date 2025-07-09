@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block title %}{{ poll.topic }} - Community Chat{% endblock %}
+
+{% block content %}
+<div class="chat-page-layout">
+    <div class="chat-window">
+        <div class="chat-header">
+            <a href="{{ url_for('poll_view', poll_id=poll.id) }}">← Back to Poll</a>
+            <h4>{{ poll.topic }}</h4>
+        </div>
+        <div class="message-list" id="message-list">
+            <!-- Message history is loaded here by the server -->
+            {% for msg in messages %}
+            <div class="message {% if msg.user_id == g.user.id %}sent{% else %}received{% endif %}">
+                <div class="message-author">{% if msg.user_id == g.user.id %}You{% else %}{{ msg.author.first_name }}{% endif %}</div>
+                <p class="message-text">{{ msg.text }}</p>
+            </div>
+            {% endfor %}
+        </div>
+        <form class="message-form" id="message-form">
+            <input type="text" id="message-input" placeholder="Type a message..." autocomplete="off" required>
+            <button type="submit" class="btn" title="Send"><i class="fas fa-paper-plane"></i></button>
+        </form>
+    </div>
+    <div class="participant-list">
+        <h4>Participants ({{ participants|length }})</h4>
+        <div id="participants-container">
+        {% for p in participants|sort(attribute='first_name') %}
+        <div class="participant-item">
+            <div class="online-indicator {% if p.id in online_users_list %}online{% endif %}" id="status-indicator-{{ p.id }}"></div>
+            <span>{{ p.first_name }} {{ p.last_name }}</span>
+        </div>
+        {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+{% include 'js_snippets/chat_scripts.html' %}
+{% endblock %}

@@ -1,0 +1,6 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="container page-header"><h1>Welcome, {{ user.first_name }}!</h1></div>
+<div class="container"><p>You have been successfully redirected. Your <a href="{{ url_for('public_profile', voter_id=user.voter_id) }}">profile page</a> is now your main dashboard.</p></div>
+{% endblock %}

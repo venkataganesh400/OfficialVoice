@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% block title %}Your Notifications{% endblock %}
+{% block content %}
+<div class="container">
+    <div class="page-header"><div><h1>Notifications</h1></div></div>
+    <div class="notification-list">
+        {% for notif in notifications %}
+            {% set notif_url = '#' %} {# Default fallback #}
+            {% if notif.action == 'new_message' and notif.actor %}
+                {% set notif_url = url_for('start_or_get_conversation', user_id=notif.actor.id) %}
+            {% elif notif.action == 'follow' and notif.actor %}
+                {% set notif_url = url_for('public_profile', voter_id=notif.actor.voter_id) %}
+            {% elif notif.poll %}
+                {% set notif_url = url_for('poll_view', poll_id=notif.poll_id) %}
+            {% endif %}
+
+        <a href="{{ notif_url }}" class="notification-list-item {% if not notif.is_read %}unread{% endif %}">
+            <div class="comment-avatar" style="flex-shrink: 0;">
+                {% if notif.actor and notif.actor.profile_image_url %}<img src="{{ notif.actor.profile_image_url }}" alt="">{% else %}<div class="icon"><i class="fas fa-user"></i></div>{% endif %}
+            </div>
+            <div>
+                <p>
+                    <strong>{{ notif.actor.first_name or 'A user' }} {{ notif.actor.last_name or '' }}</strong>
+                    {% if notif.action == 'new_message' %}
+                        sent you a new message.
+                    {% elif notif.action == 'like' %}
+                        liked your poll:
+                    {% elif notif.action == 'comment' %}
+                        commented on your poll:
+                    {% elif notif.action == 'vote' %}
+                        voted on your poll:
+                    {% elif notif.action == 'follow' %}
+                        started following you.
+                    {% else %}
+                        interacted with you.
+                    {% endif %}
+                    
+                    {% if notif.poll and notif.action != 'new_message' %}
+                        "{{ notif.poll.topic | truncate(50) }}"
+                    {% elif not notif.poll and notif.action not in ['follow', 'new_message'] %}
+                        a deleted poll.
+                    {% endif %}
+                </p>
+                <span style="font-size: 0.8em; color: var(--text-gray);">{{ moment(notif.timestamp).fromNow() }}</span>
+            </div>
+        </a>
+        {% else %}
+        <div class="card" style="text-align:center;"><p>You have no notifications.</p></div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

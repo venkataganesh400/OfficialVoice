@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% block title %}{{ poll.topic }}{% endblock %}
+{% block content %}
+<div class="container" style="max-width: 800px; padding: 3rem 1rem;">
+    <div style="display:flex; justify-content: space-between; align-items: flex-start; margin-bottom:1rem; flex-wrap: wrap; gap: 1rem;">
+        <div class="poll-author-info">
+            <h1>{{ poll.topic }}</h1>
+            <p class="poll-meta">Posted by <a href="{{ url_for('public_profile', voter_id=poll.author.voter_id) }}">{{ poll.author.first_name }} {{ poll.author.last_name }}</a> on {{ poll.date_created.strftime('%B %d, %Y') }}</p>
+            {% if poll.description %}<p>{{ poll.description }}</p>{% endif %}
+            
+            <!-- FIXED: This condition now uses the pre-calculated variable -->
+            {% if g.user and (g.user.id == poll.author.id or user_has_voted) %}
+            <a href="{{ url_for('poll_chat', poll_id=poll.id) }}" class="btn" style="background:var(--secondary); margin-top:1rem;">
+                <i class="fas fa-users"></i> Join Community Chat
+            </a>
+            {% endif %}
+        </div>
+        {% if g.user and g.user.id == poll.author.id %}
+        <div><a href="{{ url_for('delete_poll', poll_id=poll.id) }}" class="btn btn-danger" style="white-space:nowrap;">Delete Poll</a></div>
+        {% endif %}
+    </div>
+
+    <div class="card" id="poll-interaction-area">
+        {% if g.user and user_vote %}
+            {% include '_poll_results.html' %}
+        {% else %}
+            <h3>Cast Your Vote</h3>
+            <form id="vote-form" method="POST" action="{{ url_for('poll_vote_action', poll_id=poll.id) }}">
+                <div style="margin: 1.5rem 0;">
+                {% for option in poll.options %}
+                <div class="poll-vote-option">
+                    <input type="radio" name="option" value="{{ option.id }}" id="option-{{ option.id }}" required>
+                    <label for="option-{{ option.id }}">{{ option.text }}</label>
+                </div>
+                {% endfor %}
+                </div>
+                <button type="submit" class="btn btn-block" {% if not g.user %}disabled{% endif %}>Submit Vote (+1 Point)</button>
+                {% if not g.user %}
+                <p style="text-align:center;margin-top:1rem;font-size:0.9rem;">
+                    <a href="{{ url_for('login', next=request.url) }}">Log in</a> to vote.
+                </p>
+                {% endif %}
+            </form>
+        {% endif %}
+    </div>
+
+    <div class="poll-actions">
+        <button class="action-btn {% if user_has_liked %}liked{% endif %}" id="like-btn" data-poll-id="{{ poll.id }}" {% if not g.user %}disabled{% endif %}><i class="fas fa-heart"></i><span id="like-text">{%if user_has_liked%}Liked{%else%}Like{%endif%}</span></button>
+        <span id="like-count-display">{{ poll.likes.count() }} like(s)</span><span id="comment-count-display"><i class="fas fa-comment"></i> {{ poll.comments.count() }} comment(s)</span>
+    </div>
+    <div class="comment-section"><h3>Comments</h3>
+        {% if g.user %}<form id="comment-form" data-poll-id="{{ poll.id }}"><div class="form-group"><textarea name="comment_text" placeholder="Add a comment... (+2 Points)" required></textarea></div><button type="submit" class="btn">Post Comment</button></form>
+        {% else %}<p><a href="{{ url_for('login', next=request.url) }}">Log in</a> to leave a comment.</p>{% endif %}
+        <ul class="comment-list" id="comment-list-container">
+            {% for comment in comments %}
+                {% include '_comment.html' %}
+            {% else %}
+                <li id="no-comments-placeholder" style="margin-top:2rem;"><p>No comments yet. Be the first!</p></li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}{{ super() }}{% include 'js_snippets/poll_view_scripts.html' %}{% endblock %}

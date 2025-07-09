@@ -1,0 +1,28 @@
+<!-- templates/admin/manage_polls.html -->
+{% extends 'base.html' %}
+{% block title %}Manage Polls{% endblock %}
+{% block content %}
+<style> table{width:100%;border-collapse:collapse;margin-top:2rem;} th,td{text-align:left;padding:.8rem;border-bottom:1px solid var(--border);} tr:nth-child(even){background:#f9f9f9;} html[data-theme='dark'] tr:nth-child(even){background:#3a5064;}.action-btn{padding:.3rem .6rem; text-decoration:none;color:white;border-radius:5px;margin-right:5px;}.approve{background:#28a745;}.reject{background:#dc3545;}.feature{background:#17a2b8;}</style>
+<div class="container" style="padding:4rem 0;">
+    <h1>Manage Pending Polls</h1>
+    <table>
+        <thead><tr><th>Topic</th><th>Author</th><th>Date</th><th>Actions</th></tr></thead>
+        <tbody>
+        {% for poll in polls %}
+        <tr>
+            <td>{{poll.topic}}</td>
+            <td>{{poll.author.email}}</td>
+            <td>{{poll.date_created.strftime('%Y-%m-%d')}}</td>
+            <td>
+                <a href="{{url_for('action_poll', poll_id=poll.id, action='approve')}}" class="action-btn approve">Approve</a>
+                <a href="{{url_for('action_poll', poll_id=poll.id, action='reject')}}" class="action-btn reject">Reject</a>
+                <a href="{{url_for('action_poll', poll_id=poll.id, action='feature')}}" class="action-btn feature">{{'Unfeature' if poll.is_featured else 'Feature'}}</a>
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4">No pending polls found.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block title %}All Polls{% endblock %}
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <div><h1>All Polls</h1><p>Participate in the latest discussions or start your own.</p></div>
+        {% if g.user %}<a href="{{ url_for('create_poll') }}" class="btn" style="white-space:nowrap;">Create Poll</a>{% endif %}
+    </div>
+    <div class="poll-list">
+        {% for poll in polls %}
+        <a href="{{ url_for('poll_view', poll_id=poll.id) }}" class="poll-item">
+            <h3>{{ poll.topic }}</h3>
+            <div class="poll-meta">
+                <span>By {{ poll.author.first_name }} {{ poll.author.last_name }}</span> ·
+                <span>{{ moment(poll.date_created).format('ll') }}</span> ·
+                <span>{{ poll.votes.count() }} Votes</span>
+            </div>
+        </a>
+        {% else %}
+        <div class="card" style="text-align: center;"><p>No polls have been created yet. Be the first!</p></div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

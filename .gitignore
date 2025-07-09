@@ -1,0 +1,16 @@
+# Python
+*.pyc
+__pycache__/
+venv/
+.venv/
+
+# Instance Folder (contains local database)
+/instance/
+
+# Environment
+.env
+
+# IDE / OS specific
+.idea/
+.vscode/
+.DS_Store

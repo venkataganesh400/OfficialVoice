@@ -1,0 +1,71 @@
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const socket = io();
+    const room = "{{ room_id }}";
+    const currentUserId = {{ g.user.id if g.user else 'null' }};
+
+    const messageList = document.getElementById('message-list');
+    const messageForm = document.getElementById('message-form');
+    const messageInput = document.getElementById('message-input');
+    
+    // Scroll to the bottom of the chat list on page load
+    if (messageList) {
+        messageList.scrollTop = messageList.scrollHeight;
+    }
+
+    if (currentUserId) {
+        socket.on('connect', () => socket.emit('join_room', { room: room }));
+
+        if (messageForm) {
+            messageForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const text = messageInput.value.trim();
+                if (text) {
+                    socket.emit('send_message', { room: room, text: text });
+                    messageInput.value = '';
+                    messageInput.focus();
+                }
+            });
+        }
+    }
+    
+    // This function now ONLY handles NEW messages arriving in real-time.
+    const appendMessage = (msg) => {
+        if (!messageList) return;
+        const item = document.createElement('div');
+        item.classList.add('message');
+        item.classList.add(msg.author_id === currentUserId ? 'sent' : 'received');
+
+        const author = document.createElement('div');
+        author.className = 'message-author';
+        author.textContent = msg.author_id === currentUserId ? 'You' : msg.author_name;
+
+        const text = document.createElement('p');
+        text.className = 'message-text';
+        text.textContent = msg.text; // Text is already sanitized on the server, but good practice.
+
+        item.appendChild(author);
+        item.appendChild(text);
+        
+        messageList.appendChild(item);
+        // Smooth scroll for new messages
+        messageList.scrollTo({ top: messageList.scrollHeight, behavior: 'smooth' });
+    };
+    
+    socket.on('receive_message', appendMessage);
+    socket.on('error', (data) => { alert('Chat Error: ' + data.message); });
+
+    socket.on('user_status_change', data => {
+        document.querySelectorAll(`#status-indicator-${data.user_id}`).forEach(indicator => {
+            indicator.classList.toggle('online', data.status === 'online');
+            indicator.title = data.status === 'online' ? 'Online' : 'Offline';
+        });
+    });
+
+    window.addEventListener('beforeunload', () => {
+        if(currentUserId) {
+            socket.emit('leave_room', { room: room });
+        }
+    });
+});
+</script>

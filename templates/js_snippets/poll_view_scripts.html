@@ -1,0 +1,40 @@
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const likeBtn = document.getElementById("like-btn");
+    likeBtn && likeBtn.addEventListener("click", async () => { const pollId = likeBtn.dataset.pollId; const response = await fetch(`/poll/like/${pollId}`, { method: "POST" }); const data = await response.json(); document.getElementById("like-count-display").textContent = `${data.count} like(s)`; likeBtn.classList.toggle("liked", data.liked); document.getElementById("like-text").textContent = data.liked ? "Liked" : "Like"; });
+    const commentForm = document.getElementById("comment-form");
+    const commentListContainer = document.getElementById("comment-list-container");
+    const voteForm = document.getElementById('vote-form');
+    if (voteForm) {
+        voteForm.addEventListener('submit', async (e) => {
+            e.preventDefault(); 
+            const submitButton = voteForm.querySelector('button[type="submit"]');
+            submitButton.disabled = true;
+            submitButton.textContent = 'Voting...';
+            const formData = new FormData(voteForm);
+            const response = await fetch(voteForm.action, { method: 'POST', body: formData });
+            const data = await response.json();
+            const interactionArea = document.getElementById('poll-interaction-area');
+            if (data.success) {
+                interactionArea.style.transition = 'opacity 0.3s ease-out';
+                interactionArea.style.opacity = 0;
+                setTimeout(() => { interactionArea.innerHTML = data.results_html; interactionArea.style.opacity = 1; }, 300);
+            } else {
+                alert('Error: ' + data.error);
+                submitButton.disabled = false;
+                submitButton.textContent = 'Submit Vote (+1 Point)';
+            }
+        });
+    }
+    async function postComment(event) { event.preventDefault(); const form = event.target; const pollId = form.dataset.pollId; const parentId = form.dataset.parentId || null; const formData = new FormData(form); if(parentId) { formData.append("parent_id", parentId) } const response = await fetch(`/poll/comment/${pollId}`, {method: "POST", body: formData}); const data = await response.json(); if (data.success) { if (data.parent_id) { const repliesContainer = document.getElementById(`replies-for-${data.parent_id}`); repliesContainer.insertAdjacentHTML("beforeend", data.comment_html); document.getElementById(`reply-form-for-${data.parent_id}`).style.display = "none"; } else { document.getElementById("no-comments-placeholder")?.remove(); commentListContainer.insertAdjacentHTML("beforeend", data.comment_html); } document.getElementById("comment-count-display").innerHTML = `<i class="fas fa-comment"></i> ${data.total_comments} comment(s)`; form.reset(); } else { alert(data.error || "Could not post comment."); } }
+    async function likeComment(button) { const commentId = button.dataset.commentId; const response = await fetch(`/comment/like/${commentId}`, { method: 'POST' }); const data = await response.json(); if (typeof data.count !== 'undefined') { button.querySelector(".like-count").textContent = data.count; button.classList.toggle("liked", data.liked); } }
+    commentForm && commentForm.addEventListener("submit", postComment);
+    commentListContainer.addEventListener("click", (event) => {
+        const replyBtn = event.target.closest(".reply-btn");
+        if (replyBtn) { event.preventDefault(); const commentId = replyBtn.dataset.commentId; const replyFormContainer = document.getElementById(`reply-form-for-${commentId}`); if (replyFormContainer) { const isVisible = replyFormContainer.style.display === "block"; replyFormContainer.style.display = isVisible ? "none" : "block"; if (!isVisible) { replyFormContainer.querySelector("textarea").focus(); } } }
+        const commentLikeBtn = event.target.closest(".comment-like-btn");
+        if (commentLikeBtn) { event.preventDefault(); likeComment(commentLikeBtn); }
+    });
+    commentListContainer.addEventListener("submit", (event) => { if(event.target.classList.contains('reply-form')) { postComment(event); } });
+});
+</script>

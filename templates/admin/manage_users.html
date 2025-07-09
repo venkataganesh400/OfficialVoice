@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block title %}Manage Users{% endblock %}
+{% block content %}
+<div class="container page-header"><h1>Manage Users</h1></div>
+<div class="container"><div class="card" style="padding: 1.5rem;"><div style="overflow-x:auto;">
+    <table class="content-table">
+        <thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody>
+        {% for u in users %}
+        <tr>
+            <td>{{ u.id }}</td>
+            <td><a href="{{ url_for('public_profile', voter_id=u.voter_id) }}">{{ u.first_name }} {{ u.last_name }}</a></td>
+            <td>{{ u.email }}</td>
+            <td><span style="background: {{'#dc2626' if u.status != 'active' else '#16a34a'}}; color:white; padding: 0.2rem 0.5rem; border-radius:99px; font-size:0.8em; white-space:nowrap;">{{ u.status }}</span></td>
+            <td>
+                {% if not u.is_admin and u.id != g.user.id %}
+                <form method="POST" action="{{ url_for('delete_user', user_id=u.id) }}" onsubmit="return confirm('Are you sure you want to PERMANENTLY dismiss this user?');">
+                    <button type="submit" class="btn btn-danger" style="padding: 0.3rem 0.6rem; font-size:0.9em;">Dismiss User</button>
+                </form>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div></div></div>
+{% endblock %}

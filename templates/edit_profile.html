@@ -1,0 +1,212 @@
+{% extends 'base.html' %}
+{% block title %}Edit Your Profile{% endblock %}
+
+{% block content %}
+<div class="container page-header"><h1>Edit Profile</h1></div>
+<div class="container" style="max-width: 700px;">
+    <div class="card">
+        
+        <!-- START: AVATAR SECTION -->
+        <div class="profile-avatar-editor">
+            <div id="avatar-container" class="avatar-container">
+                {% if g.user.profile_image_url %}
+                    <img src="{{ g.user.profile_image_url }}?t={{ range(0, 999999) | random }}" alt="Your profile picture" id="profile-img">
+                {% else %}
+                    <div class="icon" id="profile-icon"><i class="fas fa-user"></i></div>
+                {% endif %}
+            </div>
+            <p>Click your avatar to change it.</p>
+        </div>
+        <!-- END: AVATAR SECTION -->
+
+        <hr style="border:0; border-top:1px solid var(--border-color); margin:2rem 0">
+        
+        <!-- The form now only handles text fields. Image is handled by JavaScript -->
+        <form method="POST">
+            <div style="display:flex;gap:1rem;flex-direction:column;@media(min-width:500px){flex-direction:row}"><div class="form-group" style="flex:1"><label for="first_name">First Name</label><input type="text" name="first_name" value="{{ g.user.first_name }}" required></div><div class="form-group" style="flex:1"><label for="last_name">Last Name</label><input type="text" name="last_name" value="{{ g.user.last_name }}" required></div></div>
+            <div class="form-group"><label for="bio">Your Bio</label><textarea name="bio" rows="4" placeholder="Tell the community a little about yourself...">{{ g.user.bio or '' }}</textarea></div>
+            
+            <button type="submit" class="btn btn-block" style="margin-top:1.5rem">Save Profile Information</button>
+        </form>
+
+        <hr style="border:0;border-top:1px solid var(--border-color);margin:2.5rem 0;">
+        <div style="text-align:center;">
+            <p style="margin-bottom:1rem;font-weight:600;color:var(--text-main);">Need to leave?</p>
+            <a href="{{url_for('delete_account')}}" class="btn btn-danger">Request Account Deletion</a>
+        </div>
+    </div>
+</div>
+
+<!-- This input is hidden. We will trigger it with JavaScript -->
+<input type="file" id="image-upload-input" style="display: none;" accept="image/png, image/jpeg, image/gif">
+{% endblock %}
+
+{% block modals %}
+<!-- START: AVATAR UPLOAD MODAL -->
+<div class="avatar-modal-backdrop" id="avatar-modal">
+    <div class="avatar-modal-content">
+        <h2>Change Profile Picture</h2>
+        <button class="modal-btn" id="change-photo-btn">Upload Photo</button>
+        <button class="modal-btn modal-btn-danger" id="remove-photo-btn" {% if not g.user.profile_image_url %}disabled{% endif %}>Remove Current Photo</button>
+        <button class="modal-btn modal-btn-secondary" id="cancel-modal-btn">Cancel</button>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+.profile-avatar-editor { text-align: center; margin-bottom: 2rem; }
+.avatar-container {
+    width: 120px; height: 120px; border-radius: 50%;
+    margin: 0 auto 1rem;
+    position: relative; overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--bg-main);
+    cursor: pointer;
+    border: 3px solid var(--border-color);
+}
+.avatar-container:hover::after {
+    content: '\f044'; /* FontAwesome edit icon */
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(0,0,0,0.5);
+    color: #fff;
+    font-size: 2rem;
+    opacity: 1;
+    transition: opacity .2s;
+}
+.avatar-container img { width: 100%; height: 100%; object-fit: cover; }
+.avatar-container .icon { font-size: 5rem; color: var(--primary); }
+.profile-avatar-editor p { font-size: .9em; color: var(--text-gray); }
+
+/* Modal Styles */
+.avatar-modal-backdrop {
+    position: fixed; inset: 0; z-index: 2000;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(5px);
+    display: none; align-items: center; justify-content: center;
+    animation: fadeIn 0.3s ease;
+}
+.avatar-modal-content {
+    background: var(--bg-card);
+    padding: 2rem;
+    border-radius: 1rem;
+    box-shadow: var(--shadow-md);
+    text-align: center;
+    width: 90%;
+    max-width: 400px;
+    animation: slideDown 0.4s ease-out;
+}
+.modal-btn {
+    display: block; width: 100%; text-align: center;
+    padding: .8rem; margin: 1rem 0 0;
+    border-radius: 8px; border: none; font-size: 1rem; font-weight: 600;
+    cursor: pointer; background: var(--primary); color: var(--text-light);
+}
+.modal-btn:hover { filter: brightness(1.1); }
+.modal-btn-danger { background: var(--accent-red); }
+.modal-btn-secondary { background: var(--secondary); }
+.modal-btn:disabled { background: var(--border-color); color: var(--text-gray); cursor: not-allowed; }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // Modal elements
+    const avatarContainer = document.getElementById('avatar-container');
+    const avatarModal = document.getElementById('avatar-modal');
+    const changeBtn = document.getElementById('change-photo-btn');
+    const removeBtn = document.getElementById('remove-photo-btn');
+    const cancelBtn = document.getElementById('cancel-modal-btn');
+    
+    // The hidden file input
+    const hiddenInput = document.getElementById('image-upload-input');
+
+    // Show modal on click
+    avatarContainer.addEventListener('click', () => {
+        avatarModal.style.display = 'flex';
+    });
+
+    // Hide modal functions
+    const closeModal = () => {
+        avatarModal.style.display = 'none';
+    };
+    avatarModal.addEventListener('click', (e) => {
+        if (e.target === avatarModal) closeModal();
+    });
+    cancelBtn.addEventListener('click', closeModal);
+
+    // --- Core Logic ---
+    
+    // 1. "Upload Photo" button in modal triggers the hidden file input
+    changeBtn.addEventListener('click', () => {
+        hiddenInput.click();
+    });
+
+    // 2. When a file is selected in the hidden input, upload it
+    hiddenInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        closeModal();
+        const formData = new FormData();
+        formData.append('profile_image', file);
+        
+        try {
+            const response = await fetch('/profile/upload-image', { method: 'POST', body: formData });
+            const result = await response.json();
+
+            if (result.success) {
+                // Update the avatar on the page in real-time
+                const existingImg = document.getElementById('profile-img');
+                const existingIcon = document.getElementById('profile-icon');
+                
+                if(existingIcon) existingIcon.remove();
+
+                if (existingImg) {
+                    existingImg.src = result.new_url + '?t=' + new Date().getTime(); // Bust cache
+                } else {
+                    const newImg = document.createElement('img');
+                    newImg.id = 'profile-img';
+                    newImg.src = result.new_url;
+                    avatarContainer.innerHTML = ''; // Clear it out
+                    avatarContainer.appendChild(newImg);
+                }
+                removeBtn.disabled = false; // Enable the remove button
+                alert('Profile picture updated!');
+            } else {
+                alert('Error uploading file: ' + result.error);
+            }
+        } catch (error) {
+            alert('A network error occurred. Please try again.');
+        } finally {
+            e.target.value = ''; // Reset input for next time
+        }
+    });
+
+    // 3. "Remove Photo" button sends a request to the remove endpoint
+    removeBtn.addEventListener('click', async () => {
+        if (!confirm('Are you sure you want to remove your profile picture?')) return;
+        
+        closeModal();
+
+        try {
+            const response = await fetch('/profile/remove-image', { method: 'POST' });
+            const result = await response.json();
+
+            if (result.success) {
+                // Revert to the default icon
+                avatarContainer.innerHTML = `<div class="icon" id="profile-icon"><i class="fas fa-user"></i></div>`;
+                removeBtn.disabled = true; // Disable remove button since there's no image
+                alert('Profile picture removed.');
+            } else {
+                alert('Error: ' + result.error);
+            }
+        } catch (error) {
+            alert('A network error occurred. Please try again.');
+        }
+    });
+});
+</script>
+{% endblock %}

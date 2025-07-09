@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>{% block title %}Official Voice{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"><link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.js"></script>
+    <style>
+        .mobile-nav { justify-content: flex-start; align-items: flex-start; flex-direction: column; gap: 0; }
+        .mobile-nav-header { display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 1rem; border-bottom: 1px solid var(--border-color); box-sizing: border-box; }
+        .mobile-nav-header .logo { font-size: 1.1rem; } .mobile-nav-header .logo i { font-size: 1.3rem; }
+        .mobile-nav-close { background: none; border: none; color: var(--text-main); font-size: 1.8rem; line-height: 1; cursor: pointer; padding: 0.5rem; }
+        .mobile-nav-links { flex-grow: 1; width: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 2.5rem; }
+        .desktop-nav { gap: 1.5rem; }
+        .desktop-nav a.nav-icon-link { font-size: 1.3rem; padding: 0.5rem; margin: 0; color: var(--text-gray); position: relative; }
+        .desktop-nav a.nav-icon-link:hover { color: var(--text-main); }
+        .desktop-nav a.nav-active { color: var(--primary); }
+        .desktop-nav a.nav-icon-link::after { display: none; }
+        .nav-icon-link .tooltip { position: absolute; bottom: -38px; left: 50%; transform: translateX(-50%); background: var(--secondary); color: var(--text-light); padding: 5px 10px; border-radius: 5px; font-size: 0.9em; font-weight: 500; white-space: nowrap; visibility: hidden; opacity: 0; transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out; pointer-events: none; }
+        .nav-icon-link .tooltip::after { content: ''; position: absolute; top: -5px; left: 50%; transform: translateX(-50%); border-width: 0 5px 5px; border-style: solid; border-color: transparent transparent var(--secondary) transparent; }
+        .nav-icon-link:hover .tooltip { visibility: visible; opacity: 1; }
+        .mobile-nav-links a { display: flex; align-items: center; gap: 1.5rem; width: 150px; }
+        .mobile-nav-links a .fa-fw { font-size: 1.2em; }
+    </style>
+</head>
+<body>
+    <header class="main-header">
+        <div class="container header-container">
+            <a href="{{ url_for('home') }}" class="logo" id="logo-link"><i class="fas fa-fingerprint"></i><span>Official Voice</span></a>
+            <nav class="desktop-nav">
+                <a href="{{ url_for('home') }}" class="nav-icon-link {{ 'nav-active' if request.endpoint == 'home' else '' }}" title="Home"> <i class="fas fa-home"></i><span class="tooltip">Home</span> </a>
+                <a href="{{ url_for('all_polls') }}" class="nav-icon-link {{ 'nav-active' if 'poll' in request.endpoint else '' }}" title="Polls"> <i class="fas fa-poll"></i><span class="tooltip">Polls</span> </a>
+                {% if user %}
+                    <a href="{{ url_for('inbox') }}" class="nav-icon-link {{ 'nav-active' if 'inbox' in request.endpoint or 'start_or_get_conversation' in request.endpoint else '' }}" title="Inbox"> <i class="fas fa-inbox"></i><span class="tooltip">Inbox</span> </a>
+                    <a href="{{ url_for('public_profile', voter_id=user.voter_id) }}" class="nav-icon-link {{ 'nav-active' if 'public_profile' in request.endpoint or 'edit_profile' in request.endpoint else '' }}" title="Profile"> <i class="fas fa-user"></i><span class="tooltip">Profile</span> </a>
+                    <a href="{{ url_for('notifications') }}" class="nav-icon-link {{ 'nav-active' if 'notifications' in request.endpoint else '' }}" title="Notifications" style="position:relative;"> <i class="fas fa-bell"></i><span class="tooltip">Notifications</span> {% if unread_notifications_count > 0 %}<span class="nav-notification-badge" style="top:5px; right:5px;">{{ unread_notifications_count }}</span>{% endif %} </a>
+                    {% if user.is_admin %} <a href="{{ url_for('admin_dashboard') }}" class="nav-icon-link nav-admin {{ 'nav-active' if 'admin' in request.endpoint else '' }}" title="Admin"> <i class="fas fa-user-shield"></i><span class="tooltip">Admin</span> </a> {% endif %}
+                    <a href="{{ url_for('logout') }}" class="nav-icon-link" title="Logout"> <i class="fas fa-sign-out-alt"></i><span class="tooltip">Logout</span> </a>
+                {% else %}
+                    <a href="{{ url_for('login') }}" class="nav-icon-link {{ 'nav-active' if request.endpoint == 'login' else '' }}" title="Log In"> <i class="fas fa-sign-in-alt"></i><span class="tooltip">Log In</span> </a>
+                    <a href="{{ url_for('signup') }}" class="nav-icon-link {{ 'nav-active' if request.endpoint == 'signup' else '' }}" title="Sign Up"> <i class="fas fa-user-plus"></i><span class="tooltip">Sign Up</span> </a>
+                {% endif %}
+            </nav>
+            <div class="theme-switch-wrapper"><button class="theme-switch-btn" data-theme="light" title="Switch to light theme"><i class="fas fa-sun"></i></button><button class="theme-switch-btn" data-theme="dark" title="Switch to dark theme"><i class="fas fa-moon"></i></button></div>
+            <button class="mobile-nav-toggle" aria-controls="mobile-navigation"><i class="fas fa-bars"></i></button>
+        </div>
+    </header>
+
+    <nav class="mobile-nav" id="mobile-navigation">
+        <div class="mobile-nav-header">
+            <a href="{{ url_for('home') }}" class="logo"><i class="fas fa-fingerprint"></i><span>Official Voice</span></a>
+            <button class="mobile-nav-close" aria-label="Close menu"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="mobile-nav-links">
+            <a href="{{ url_for('home') }}"><i class="fas fa-home fa-fw"></i>Home</a>
+            <a href="{{ url_for('all_polls') }}"><i class="fas fa-poll fa-fw"></i>Polls</a>
+            {% if user %}
+                <a href="{{ url_for('inbox') }}"><i class="fas fa-inbox fa-fw"></i>Inbox</a>
+                <a href="{{ url_for('public_profile', voter_id=user.voter_id) }}"><i class="fas fa-user fa-fw"></i>Profile</a>
+                <a href="{{ url_for('notifications') }}" style="position:relative;"><i class="fas fa-bell fa-fw"></i>Notifications {% if unread_notifications_count > 0 %}<span class="nav-notification-badge" style="top:-.5rem;right:-1rem">{{ unread_notifications_count }}</span>{% endif %}</a>
+                {% if user.is_admin %}<a href="{{ url_for('admin_dashboard') }}" class="nav-admin"><i class="fas fa-user-shield fa-fw"></i>Admin</a>{% endif %}
+                <hr style="border: 0; height: 1px; background: var(--border-color); width: 80%; margin: 1rem 0;">
+                <a href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt fa-fw"></i>Logout</a>
+            {% else %}
+                <hr style="border: 0; height: 1px; background: var(--border-color); width: 80%; margin: 1rem 0;">
+                <a href="{{ url_for('login') }}"><i class="fas fa-sign-in-alt fa-fw"></i>Log In</a>
+                <a href="{{ url_for('signup') }}"><i class="fas fa-user-plus fa-fw"></i>Sign Up</a>
+            {% endif %}
+        </div>
+    </nav>
+
+    <main id="main-content">
+      {% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}<div class="container" style="padding-top:1rem;max-width:800px;">{% for category, message in messages %}<div class="alert alert-{{ category }}">{{ message }}</div>{% endfor %}</div>{% endif %}{% endwith %}
+      {% block content %}{% endblock %}{% block modals %}{% endblock %}
+    </main>
+    <footer class="main-footer"><div class="container"><div class="footer-grid"><div class="footer-column"><a href="{{ url_for('home') }}" class="logo"><i class="fas fa-fingerprint"></i><span>Official Voice</span></a><p>Empowering citizens to shape the nation's future through direct engagement and democratic participation.</p></div><div class="footer-column"><h4>Quick Links</h4><ul><li><a href="{{ url_for('home') }}">Home</a></li><li><a href="{{ url_for('all_polls') }}">All Polls</a></li><li><a href="{{ url_for('public_profile', voter_id=user.voter_id) if user else url_for('login') }}">My Profile</a></li></ul></div></div><div class="footer-copyright"><p>© {{ year }} Official Voice. All rights reserved.</p></div></div></footer>
+    
+    {{ moment.include_moment() }}
+    
+    <script>
+        document.getElementById("logo-link")?.addEventListener("click",function(e){e.preventDefault();const t=this;t.classList.contains("is-animating")||(t.classList.add("is-animating"),setTimeout(()=>{window.location.href=t.href},700))});document.getElementById("logo-link")?.addEventListener("animationend",function(){this.classList.remove("is-animating")});const welcomeBackdrop=document.querySelector(".welcome-modal-backdrop");welcomeBackdrop&&welcomeBackdrop.addEventListener("click",function(){this.style.animation="fadeOut .3s ease-out forwards"});const navToggle=document.querySelector(".mobile-nav-toggle"),mobileNav=document.querySelector(".mobile-nav"),mainContent=document.querySelector("#main-content"),mobileNavCloseBtn=document.querySelector(".mobile-nav-close");function openMenu(){mobileNav.classList.add("is-open"),navToggle.innerHTML='<i class="fas fa-times"></i>'}function closeMenu(){mobileNav.classList.contains("is-open")&&(mobileNav.classList.remove("is-open"),navToggle.innerHTML='<i class="fas fa-bars"></i>')}navToggle.addEventListener("click",e=>{e.stopPropagation(),mobileNav.classList.contains("is-open")?closeMenu():openMenu()}),mobileNavCloseBtn.addEventListener("click",closeMenu),mainContent.addEventListener("click",closeMenu),document.querySelectorAll(".mobile-nav-links a").forEach(e=>{e.addEventListener("click",closeMenu)});const lightBtn=document.querySelector('button[data-theme="light"]'),darkBtn=document.querySelector('button[data-theme="dark"]');function setTheme(e){document.documentElement.setAttribute("data-theme",e),localStorage.setItem("theme",e),lightBtn.classList.toggle("active","light"===e),darkBtn.classList.toggle("active","dark"===e)}lightBtn.addEventListener("click",()=>setTheme("light")),darkBtn.addEventListener("click",()=>setTheme("dark")),setTheme(localStorage.getItem("theme")||(window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"));
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

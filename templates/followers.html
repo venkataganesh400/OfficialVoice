@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% block title %}{{ user.first_name }}'s {{ list_type }}{% endblock %}
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <div><h1>{{ list_type }} for {{ user.first_name }} {{ user.last_name }}</h1>
+             <p><a href="{{ url_for('public_profile', voter_id=user.voter_id) }}">← Back to Profile</a></p>
+        </div>
+    </div>
+    <div class="user-list">
+        {% for u in user_list %}
+        <div class="user-list-item card">
+            <a href="{{ url_for('public_profile', voter_id=u.voter_id) }}" class="user-info">
+                <div class="comment-avatar">
+                    {% if u.profile_image_url %}<img src="{{ u.profile_image_url }}" alt="profile picture">{% else %}<div class="icon"><i class="fas fa-user"></i></div>{% endif %}
+                </div>
+                <div><span class="author">{{ u.first_name }} {{ u.last_name }}</span><span class="voter-id">{{ u.voter_id }}</span></div>
+            </a>
+            {% if g.user and g.user.id != u.id %}
+            <button class="btn follow-btn-small {% if g.user.is_following(u) %}following{% endif %}" data-user-id="{{ u.id }}">{% if g.user.is_following(u) %}Following{% else %}Follow{% endif %}</button>
+            {% endif %}
+        </div>
+        {% else %}
+        <div class="card" style="text-align: center;"><p>No users to display here.</p></div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<!-- UPDATED SCRIPT TO PREVENT PAGE RELOAD -->
+<script>
+document.querySelectorAll(".follow-btn-small").forEach(button => {
+    button.addEventListener("click", async (e) => {
+        const button = e.target;
+        const userId = button.dataset.userId;
+        
+        const response = await fetch(`/user/follow/${userId}`, { method: "POST" });
+        const data = await response.json();
+
+        if (data.action) {
+            if (data.action === "followed") {
+                button.textContent = "Following";
+                button.classList.add("following");
+            } else {
+                button.textContent = "Follow";
+                button.classList.remove("following");
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

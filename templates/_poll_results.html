@@ -1,0 +1,12 @@
+<h3>Results</h3>
+{% if user_vote %}<p style="font-size:0.9rem;color:var(--text-gray);">You voted for: <strong>{{ user_vote.option.text }}</strong></p>{% endif %}
+<hr style="border:0;border-top:1px solid var(--border-color);margin:1.5rem 0;">
+
+{% for option in poll.options %}
+    {% set vote_count = option.votes.count() %}
+    {% set percentage = (vote_count / total_votes * 100) if total_votes > 0 else 0 %}
+    <div class="poll-result">
+        <div class="poll-result-info"><span>{{ option.text }}</span><strong>{{ vote_count }} vote(s)</strong></div>
+        <div class="poll-result-bar"><div class="poll-result-fill" style="width:{{percentage}}%;">{{'%.1f'|format(percentage)}}%</div></div>
+    </div>
+{% endfor %}

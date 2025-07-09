@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% block title %}{{ profile_user.first_name }}'s Profile{% endblock %}
+{% block content %}
+<div class="container" style="padding-top: 3rem;">
+    <div class="card">
+        <div class="profile-layout">
+            <div class="profile-avatar">
+                {% if profile_user.profile_image_url %}
+                    <img src="{{ profile_user.profile_image_url }}" alt="{{ profile_user.first_name }}'s profile picture">
+                {% else %}
+                    <div class="icon"><i class="fas fa-user"></i></div>
+                {% endif %}
+            </div>
+            <div class="profile-details">
+                <h2>{{ profile_user.first_name }} {{ profile_user.last_name }}</h2>
+                <div class="meta-info"><p>Voter ID: {{ profile_user.voter_id }} · Joined {{ profile_user.date_joined.strftime('%B %Y') }}</p></div>
+                {% if profile_user.bio %}<p style="margin-bottom:2rem;">{{ profile_user.bio }}</p>{% else %}<p style="margin-bottom:2rem; font-style: italic; color:var(--text-gray);">No bio provided.</p>{% endif %}
+                <div class="profile-stats">
+                    <div class="stat-item"><span class="count">{{ profile_user.points }}</span><span class="label">Points</span></div>
+                    <div class="stat-item"><a href="{{ url_for('followers_list', voter_id=profile_user.voter_id) }}"><span id="follower-count-display" class="count">{{ profile_user.followers.count() }}</span><span class="label">Followers</span></a></div>
+                    <div class="stat-item"><a href="{{ url_for('following_list', voter_id=profile_user.voter_id) }}"><span class="count">{{ profile_user.followed.count() }}</span><span class="label">Following</span></a></div>
+                    <div class="stat-item"><span class="count">{{ polls|length }}</span><span class="label">Polls</span></div>
+                </div>
+
+                <div class="profile-actions" style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem;">
+                    {% if g.user %}
+                        {% if g.user.id == profile_user.id %}
+                            <a href="{{ url_for('edit_profile') }}" class="btn">Edit Profile</a>
+                        {% else %}
+                            {% if g.user.is_following(profile_user) and profile_user.is_following(g.user) %}
+                                <a href="{{ url_for('start_or_get_conversation', user_id=profile_user.id) }}" class="btn" style="background:var(--secondary);"><i class="fas fa-envelope"></i> Message</a>
+                            {% endif %}
+                            <button class="btn follow-btn {% if g.user.is_following(profile_user) %}following{% endif %}" data-user-id="{{ profile_user.id }}">{% if g.user.is_following(profile_user) %}Following{% else %}Follow{% endif %}</button>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    <div style="margin-top: 3rem;"><h3>Polls by {{ profile_user.first_name }}</h3>
+        <div class="poll-list">
+            {% for poll in polls %}<a href="{{ url_for('poll_view', poll_id=poll.id) }}" class="poll-item"><h3>{{ poll.topic }}</h3><div class="poll-meta">{{ poll.date_created.strftime('%b %d, %Y') }} · {{ poll.votes.count() }} Votes</div></a>
+            {% else %}<div class="card" style="text-align: center;"><p>{{ profile_user.first_name }} hasn't created any polls yet.</p></div>{% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded",()=>{const e=document.querySelector(".follow-btn");e&&e.addEventListener("click",async()=>{e.disabled=true;const t=e.dataset.userId,n=await fetch(`/user/follow/${t}`,{method:"POST"}),o=await n.json();o.action&&(document.getElementById("follower-count-display").textContent=o.follower_count,setTimeout(()=>{location.reload()},100))})});
+</script>
+{% endblock %}

@@ -1,0 +1,35 @@
+<!-- templates/admin/manage_deletions.html -->
+{% extends 'base.html' %}
+{% block title %}Account Deletion Requests{% endblock %}
+{% block content %}
+<style> table{width:100%;border-collapse:collapse;margin-top:2rem;} th,td{text-align:left;padding:.8rem;border-bottom:1px solid var(--border);}</style>
+<div class="container" style="padding:4rem 0;">
+    <h1>Manage Deletion Requests</h1>
+    <table>
+        <thead><tr><th>User Email</th><th>Reason</th><th>Requested On</th><th>Action</th></tr></thead>
+        <tbody>
+        {% for req in requests %}
+        <tr>
+            <td>{{req.user.email}}</td>
+            <td>{{req.reason}}</td>
+            <td>{{req.requested_on.strftime('%Y-%m-%d')}}</td>
+            <td><a href="{{url_for('approve_deletion', req_id=req.id)}}" style="color:white;background:#dc3545;padding:.3rem .6rem;border-radius:5px;text-decoration:none;" class="approve-deletion">Approve Deletion</a></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4">No pending deletion requests.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+document.querySelectorAll('.approve-deletion').forEach(link => {
+    link.addEventListener('click', e => {
+        if(!confirm('ARE YOU ABSOLUTELY SURE? This will permanently delete the user and all their data.')) {
+            e.preventDefault();
+        }
+    })
+});
+</script>
+{% endblock %}

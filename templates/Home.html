@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% block title %}Your Voice, Your Future - Official Voice{% endblock %}
+{% block modals %}
+{% if new_user and g.user %}
+<div class="welcome-modal-backdrop">
+    <div class="welcome-modal">
+        <div class="icon"><i class="fas fa-party-horn"></i></div>
+        <h2>Welcome, {{ g.user.first_name }}!</h2>
+        <p>We're thrilled to have you in the community. As a bonus, we've started you off with some points.</p>
+        <span class="points-highlight">+10 Points</span>
+        <p style="font-size:0.9em; color:var(--text-gray)">(Click anywhere to continue)</p>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+{% block content %}
+<div class="hero">
+    <div class="hero-content">
+        <h1>Your Voice, Your Future</h1>
+        <p>Join a community of engaged citizens. Participate in polls, share your opinions, and shape the decisions that affect us all.</p>
+        <a href="{{ url_for('signup') if not g.user else url_for('create_poll') }}" class="btn-cta">{{ "Create a Poll" if g.user else "Get Started Now →" }}</a>
+    </div>
+</div>
+<div class="container page-section">
+    <h2 class="section-title"><i class="fas fa-star"></i> Featured Polls</h2>
+    <div class="feature-grid">
+        {% for poll in featured_polls %}
+        <a href="{{ url_for('poll_view', poll_id=poll.id) }}" class="poll-item">
+            <h3>{{ poll.topic }}</h3>
+            <div class="poll-meta">By {{poll.author.first_name}} | {{poll.date_created.strftime('%b %d')}}</div>
+        </a>
+        {% else %}
+        <p style="grid-column: 1 / -1; text-align: center;">No featured polls at the moment. Why not create one?</p>
+        {% endfor %}
+    </div>
+</div>
+<div class="container page-section" style="margin-top:0; padding-top:2rem;">
+    <h2 class="section-title">How It Works</h2>
+    <div class="feature-grid">
+        <div class="card feature-card"><div class="icon"><i class="fas fa-user-plus"></i></div><h3>Sign Up</h3><p>Create your secure account in seconds.</p></div>
+        <div class="card feature-card"><div class="icon"><i class="fas fa-poll"></i></div><h3>Vote</h3><p>Participate in polls that interest you.</p></div>
+        <div class="card feature-card"><div class="icon"><i class="fas fa-chart-line"></i></div><h3>Influence</h3><p>See real-time results and make your voice count.</p></div>
+    </div>
+</div>
+{% endblock %}

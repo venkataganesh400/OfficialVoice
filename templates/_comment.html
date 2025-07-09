@@ -1,0 +1,36 @@
+<li class="comment-item" id="comment-{{ comment.id }}">
+    <div class="comment-avatar">
+        <a href="{{ url_for('public_profile', voter_id=comment.author.voter_id) }}">
+            {% if comment.author.profile_image_url %}
+                <img src="{{ comment.author.profile_image_url }}" alt="{{ comment.author.first_name }}'s avatar">
+            {% else %}
+                <div class="icon"><i class="fas fa-user"></i></div>
+            {% endif %}
+        </a>
+    </div>
+    <div class="comment-body">
+        <div class="comment-header">
+            <a href="{{ url_for('public_profile', voter_id=comment.author.voter_id) }}" class="author">{{ comment.author.first_name }} {{ comment.author.last_name }}</a>
+            <span class="timestamp" title="{{ comment.timestamp.strftime('%Y-%m-%d %H:%M:%S UTC') }}">· {{ moment(comment.timestamp).fromNow() }}</span>
+        </div>
+        <div class="comment-content"><p>{{ comment.text|safe }}</p></div>
+        <div class="comment-actions">
+            <button class="action-btn comment-like-btn {% if g.user and comment.id in user_comment_likes %}liked{% endif %}" data-comment-id="{{ comment.id }}" {% if not g.user %}disabled title="Log in to like comments"{% endif %}><i class="fas fa-heart"></i> <span class="like-count">{{ comment.likes|length }}</span></button>
+            <button class="action-btn reply-btn" data-comment-id="{{ comment.id }}" {% if not g.user %}disabled title="Log in to reply"{% endif %}><i class="fas fa-reply"></i> Reply</button>
+        </div>
+        <div class="reply-form-container" id="reply-form-for-{{ comment.id }}">
+             <form class="reply-form" data-poll-id="{{ comment.poll_id }}" data-parent-id="{{ comment.id }}">
+                <div class="form-group"><textarea name="comment_text" placeholder="Write a reply..." required></textarea></div>
+                <button type="submit" class="btn" style="padding: .4rem .8rem; font-size:.9em;">Post Reply</button>
+             </form>
+        </div>
+        <ul class="replies-list" id="replies-for-{{ comment.id }}">
+            <!-- This section correctly renders the nested replies -->
+            {% set parent_comment = comment %}
+            {% for comment in parent_comment.replies %}
+                {% include '_reply.html' %}
+            {% endfor %}
+            {% set comment = parent_comment %}
+        </ul>
+    </div>
+</li>

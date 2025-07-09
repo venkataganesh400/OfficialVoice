@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block title %}Create Poll{% endblock %}
+{% block content %}
+<div class="container page-header"><h1>Create a New Poll (+5 Points)</h1></div>
+<div class="container" style="max-width: 700px;">
+    <div class="card">
+        <form method="POST">
+            <div class="form-group"><label for="topic">Topic / Question</label><input type="text" name="topic" value="{{ topic or '' }}" required></div>
+            <div class="form-group"><label for="description">Description (Optional)</label><textarea name="description" rows="3">{{ description or '' }}</textarea></div>
+            <hr style="border:0; border-top:1px solid var(--border-color); margin: 2rem 0;">
+            <div id="options-container">
+                <div class="form-group"><label>Option 1</label><input type="text" name="options" required></div>
+                <div class="form-group"><label>Option 2</label><input type="text" name="options" required></div>
+            </div>
+            <button type="button" class="btn" style="background:var(--secondary); margin-bottom: 1rem;" id="add-option">Add Another Option</button>
+            <button type="submit" class="btn btn-block">Publish Poll</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+document.getElementById('add-option').addEventListener('click',()=>{const e=document.createElement("div");e.classList.add("form-group");const t=document.querySelectorAll("#options-container .form-group").length+1;e.innerHTML=`<label>Option ${t}</label><input type="text" name="options" required>`,document.getElementById("options-container").appendChild(e)});
+</script>
+{% endblock %}

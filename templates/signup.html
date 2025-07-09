@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block title %}Sign Up{% endblock %}
+{% block content %}
+<div class="container" style="max-width: 550px; padding: 4rem 1rem;">
+    <div class="card">
+        <h1 style="text-align:center; margin-bottom: 2rem;">Create Your Account</h1>
+        <form method="POST">
+            <div style="display:flex; gap:1rem; flex-direction: column; @media(min-width: 500px){flex-direction: row;}">
+                <div class="form-group" style="flex:1;"><label for="first_name">First Name</label><input type="text" name="first_name" required></div>
+                <div class="form-group" style="flex:1;"><label for="last_name">Last Name</label><input type="text" name="last_name" required></div>
+            </div>
+            <div class="form-group"><label for="email">Email Address</label><input type="email" name="email" required></div>
+            <div class="form-group"><label for="password">Password (min. 8 characters)</label><input type="password" name="password" minlength="8" required></div>
+            <button type="submit" class="btn btn-block">Sign Up & Earn 10 Points</button>
+            <p style="text-align:center; margin-top:1.5rem;">Already have an account? <a href="{{url_for('login')}}">Log In</a></p>
+        </form>
+    </div>
+</div>
+{% endblock %}
