@@ -223,3 +223,28 @@ html[data-theme=dark] .alert-warning{background-color:#78350f;color:#fef08a;bord
 .password-toggle-icon:hover {
     color: var(--primary);
 }
+/* --- ADD THIS TO THE END OF YOUR CSS FILE --- */
+
+/* =================================
+   REAL-TIME VALIDATION STYLES
+==================================== */
+
+.validation-message {
+    font-size: 0.875em;
+    font-weight: 500;
+    margin-top: 0.5rem;
+    min-height: 1.2em; /* Prevents the layout from jumping when the message appears */
+    transition: color 0.3s;
+}
+
+.validation-message.checking {
+    color: var(--text-gray);
+}
+
+.validation-message.valid {
+    color: #10b981; /* A pleasant green */
+}
+
+.validation-message.invalid {
+    color: var(--accent-red);
+}
