@@ -78,6 +78,28 @@
     
     <script>
         document.getElementById("logo-link")?.addEventListener("click",function(e){e.preventDefault();const t=this;t.classList.contains("is-animating")||(t.classList.add("is-animating"),setTimeout(()=>{window.location.href=t.href},700))});document.getElementById("logo-link")?.addEventListener("animationend",function(){this.classList.remove("is-animating")});const welcomeBackdrop=document.querySelector(".welcome-modal-backdrop");welcomeBackdrop&&welcomeBackdrop.addEventListener("click",function(){this.style.animation="fadeOut .3s ease-out forwards"});const navToggle=document.querySelector(".mobile-nav-toggle"),mobileNav=document.querySelector(".mobile-nav"),mainContent=document.querySelector("#main-content"),mobileNavCloseBtn=document.querySelector(".mobile-nav-close");function openMenu(){mobileNav.classList.add("is-open"),navToggle.innerHTML='<i class="fas fa-times"></i>'}function closeMenu(){mobileNav.classList.contains("is-open")&&(mobileNav.classList.remove("is-open"),navToggle.innerHTML='<i class="fas fa-bars"></i>')}navToggle.addEventListener("click",e=>{e.stopPropagation(),mobileNav.classList.contains("is-open")?closeMenu():openMenu()}),mobileNavCloseBtn.addEventListener("click",closeMenu),mainContent.addEventListener("click",closeMenu),document.querySelectorAll(".mobile-nav-links a").forEach(e=>{e.addEventListener("click",closeMenu)});const lightBtn=document.querySelector('button[data-theme="light"]'),darkBtn=document.querySelector('button[data-theme="dark"]');function setTheme(e){document.documentElement.setAttribute("data-theme",e),localStorage.setItem("theme",e),lightBtn.classList.toggle("active","light"===e),darkBtn.classList.toggle("active","dark"===e)}lightBtn.addEventListener("click",()=>setTheme("light")),darkBtn.addEventListener("click",()=>setTheme("dark")),setTheme(localStorage.getItem("theme")||(window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"));
+         document.addEventListener('DOMContentLoaded', function () {
+            // Find all password toggle icons
+            const toggleIcons = document.querySelectorAll('.password-toggle-icon');
+
+            toggleIcons.forEach(icon => {
+                icon.addEventListener('click', function () {
+                    // Find the password input field within the same container
+                    const passwordInput = this.parentElement.querySelector('input');
+
+                    // Check the current type and switch it
+                    if (passwordInput.type === 'password') {
+                        passwordInput.type = 'text';
+                        this.classList.remove('fa-eye');
+                        this.classList.add('fa-eye-slash');
+                    } else {
+                        passwordInput.type = 'password';
+                        this.classList.remove('fa-eye-slash');
+                        this.classList.add('fa-eye');
+                    }
+                });
+            });
+        });
     </script>
     {% block scripts %}{% endblock %}
 </body>
