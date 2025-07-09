@@ -9,8 +9,16 @@
                 <div class="form-group" style="flex:1;"><label for="first_name">First Name</label><input type="text" name="first_name" required></div>
                 <div class="form-group" style="flex:1;"><label for="last_name">Last Name</label><input type="text" name="last_name" required></div>
             </div>
-            <div class="form-group"><label for="email">Email Address</label><input type="email" name="email" required></div>
-            <!-- === MODIFIED BLOCK START === -->
+
+            <!-- START: MODIFIED EMAIL BLOCK -->
+            <div class="form-group">
+                <label for="email-input">Email Address</label>
+                <input type="email" name="email" id="email-input" required>
+                <!-- This div is where the validation message will appear -->
+                <div id="email-validation-message" class="validation-message"></div>
+            </div>
+            <!-- END: MODIFIED EMAIL BLOCK -->
+
             <div class="form-group">
                 <label for="password">Password (min. 8 characters)</label>
                 <div class="password-input-container">
@@ -18,10 +26,62 @@
                     <i class="fas fa-eye password-toggle-icon"></i>
                 </div>
             </div>
-            <!-- === MODIFIED BLOCK END === -->
+
             <button type="submit" class="btn btn-block">Sign Up & Earn 10 Points</button>
             <p style="text-align:center; margin-top:1.5rem;">Already have an account? <a href="{{url_for('login')}}">Log In</a></p>
         </form>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }} <!-- This includes scripts from the base template if any -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const emailInput = document.getElementById('email-input');
+    const validationMessage = document.getElementById('email-validation-message');
+    const signupForm = document.querySelector('form');
+    let debounceTimer;
+    let isEmailValid = false; // To track email availability
+
+    emailInput.addEventListener('input', function() {
+        clearTimeout(debounceTimer); // Reset the timer on each keypress
+        const email = emailInput.value.trim();
+
+        // Simple validation: if email is too short or doesn't look like an email, don't check
+        if (email.length < 5 || !email.includes('@') || !email.includes('.')) {
+            validationMessage.textContent = '';
+            validationMessage.className = 'validation-message';
+            isEmailValid = false;
+            return;
+        }
+
+        // Show a "checking..." message immediately
+        validationMessage.textContent = 'Checking...';
+        validationMessage.className = 'validation-message checking';
+
+        // Set a timer to wait 500ms before making the request
+        debounceTimer = setTimeout(() => {
+            fetch(`/check-email?email=${encodeURIComponent(email)}`)
+                .then(response => response.json())
+                .then(data => {
+                    validationMessage.textContent = data.message;
+                    if (data.exists) {
+                        validationMessage.className = 'validation-message invalid';
+                        isEmailValid = false;
+                    } else {
+                        validationMessage.className = 'validation-message valid';
+                        isEmailValid = true;
+                    }
+                })
+                .catch(error => {
+                    console.error('Email check error:', error);
+                    validationMessage.textContent = 'Could not verify email.';
+                    validationMessage.className = 'validation-message invalid';
+                    isEmailValid = false;
+                });
+        }, 500);
+    });
+});
+</script>
 {% endblock %}
