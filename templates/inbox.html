@@ -1,55 +1,53 @@
 
-
 {% extends 'base.html' %}
 {% block title %}Inbox{% endblock %}
 
+{% block page_class %}page-chat-layout{% endblock %}
+
 {% block content %}
-{# Add a class to body for mobile view switching #}
-<script>document.body.classList.add('inbox-page');</script>
+<div class="inbox-layout">
+    <div class="conversation-list">
+        {% for conv in conversations %}
+            {% set other_user = conv.user_two if conv.user_one_id == g.user.id else conv.user_one %}
+            {# The entire list item is a link for mobile navigation #}
+            <a href="{{ url_for('start_or_get_conversation', user_id=other_user.id) }}" 
+               class="conversation-list-item {% if conversation_id and conversation_id == conv.id %}active{% endif %}"
+               id="conversation-user-{{ other_user.id }}">
+                
+                {% if other_user.profile_image_url %}
+                    <img src="{{ other_user.profile_image_url }}" alt="{{ other_user.first_name }}'s profile picture">
+                {% else %}
+                    <div class="icon"><i class="fas fa-user"></i></div>
+                {% endif %}
 
-<div class="inbox-container">
-    <div class="inbox-layout">
-        <div class="conversation-list" id="conversation-list-panel">
-            {% for conv in conversations %}
-                {% set other_user = conv.user_two if conv.user_one_id == g.user.id else conv.user_one %}
-                {# The entire list item is a link, for better mobile experience #}
-                <a href="{{ url_for('start_or_get_conversation', user_id=other_user.id) }}" 
-                   class="conversation-list-item {% if conversation_id and conversation_id == conv.id %}active{% endif %}"
-                   id="conversation-user-{{ other_user.id }}">
-                    
-                    {% if other_user.profile_image_url %}
-                        <img src="{{ other_user.profile_image_url }}" alt="{{ other_user.first_name }}'s profile picture">
-                    {% else %}
-                        <div class="icon"><i class="fas fa-user"></i></div>
-                    {% endif %}
-
-                    <div class="conversation-details">
-                        <strong>{{ other_user.first_name }} {{ other_user.last_name }}</strong>
-                        <small>Last message: {{ moment(conv.last_message_timestamp).calendar() }}</small>
-                    </div>
-
-                    <div class="online-indicator {% if other_user.id in online_users_list %}online{% endif %}"
-                         id="status-indicator-{{ other_user.id }}"
-                         title="{% if other_user.id in online_users_list %}Online{% else %}Offline{% endif %}">
-                    </div>
-                </a>
-            {% else %}
-                <div style="text-align:center; padding: 2rem; color: var(--text-gray);">
-                    <p style="font-size: 1.1em; margin-bottom: .5rem;">No conversations yet.</p>
-                    <p>When you and another user follow each other, you can message them from their profile page.</p>
+                <div class="conversation-details">
+                    <strong>{{ other_user.first_name }} {{ other_user.last_name }}</strong>
+                    <small>Last message: {{ moment(conv.last_message_timestamp).fromNow(refresh=true) }}</small>
                 </div>
-            {% endfor %}
-        </div>
-        
-        {# This block is filled by messages.html on desktop, or shows a placeholder. On mobile, it's hidden by default. #}
-        {% block chat_window %}
-        <div class="chat-placeholder">
-            <i class="fas fa-comments"></i>
-            <h2>Welcome to your Inbox</h2>
-            <p>Select a conversation to start messaging.</p>
-        </div>
-        {% endblock %}
+
+                <div class="online-indicator {% if other_user.id in online_users_list %}online{% endif %}"
+                     id="status-indicator-{{ other_user.id }}"
+                     title="{% if other_user.id in online_users_list %}Online{% else %}Offline{% endif %}">
+                </div>
+            </a>
+        {% else %}
+            <div style="text-align:center; padding: 2rem; color: var(--text-gray);">
+                <i class="fas fa-comments" style="font-size: 3rem; margin-bottom: 1rem; color: var(--border-color);"></i>
+                <p style="font-size: 1.1em; margin-bottom: .5rem;">No conversations yet.</p>
+                <p>When you and another user follow each other, you can start a chat from their profile page.</p>
+            </div>
+        {% endfor %}
     </div>
+    
+    {# The `messages.html` template will fill this block with the chat window #}
+    {# On mobile, this will appear to slide in over the conversation list #}
+    {% block chat_window %}
+    <div class="chat-placeholder">
+        <i class="fas fa-envelope-open-text"></i>
+        <h2>Your Inbox</h2>
+        <p>Select a conversation from the left to start messaging.</p>
+    </div>
+    {% endblock %}
 </div>
 {% endblock %}
 
@@ -57,17 +55,14 @@
 {{ super() }}
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    // This script is for the main inbox view to show user online status.
-    // It avoids running on the active chat view on mobile.
-    if (document.body.classList.contains('inbox-page')) {
-        const socket = io();
-        socket.on('user_status_change', data => {
-            document.querySelectorAll(`#status-indicator-${data.user_id}`).forEach(indicator => {
-                indicator.classList.toggle('online', data.status === 'online');
-                indicator.title = data.status === 'online' ? 'Online' : 'Offline';
-            });
+    // This script handles the real-time online status indicators.
+    const socket = io();
+    socket.on('user_status_change', data => {
+        document.querySelectorAll(`#status-indicator-${data.user_id}`).forEach(indicator => {
+            indicator.classList.toggle('online', data.status === 'online');
+            indicator.title = data.status === 'online' ? 'Online' : 'Offline';
         });
-    }
+    });
 });
 </script>
 {% endblock %}
