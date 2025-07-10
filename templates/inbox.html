@@ -1,15 +1,17 @@
 
+
 {% extends 'base.html' %}
 {% block title %}Inbox{% endblock %}
 
-{% block page_class %}page-chat-layout{% endblock %}
+{% block page_class %}page-chat-layout {% if conversation_id %}chat-view-active{% endif %}{% endblock %}
 
 {% block content %}
 <div class="inbox-layout">
+    
+    <!-- Left Panel: List of all conversations -->
     <div class="conversation-list">
         {% for conv in conversations %}
             {% set other_user = conv.user_two if conv.user_one_id == g.user.id else conv.user_one %}
-            {# The entire list item is a link for mobile navigation #}
             <a href="{{ url_for('start_or_get_conversation', user_id=other_user.id) }}" 
                class="conversation-list-item {% if conversation_id and conversation_id == conv.id %}active{% endif %}"
                id="conversation-user-{{ other_user.id }}">
@@ -17,7 +19,7 @@
                 {% if other_user.profile_image_url %}
                     <img src="{{ other_user.profile_image_url }}" alt="{{ other_user.first_name }}'s profile picture">
                 {% else %}
-                    <div class="icon"><i class="fas fa-user"></i></div>
+                    <div class="icon" style="background:var(--bg-card); border: 1px solid var(--border-color); display:flex; align-items:center; justify-content:center; color: var(--text-gray);"><i class="fas fa-user"></i></div>
                 {% endif %}
 
                 <div class="conversation-details">
@@ -31,23 +33,25 @@
                 </div>
             </a>
         {% else %}
-            <div style="text-align:center; padding: 2rem; color: var(--text-gray);">
+            <div style="text-align:center; padding: 2rem; color: var(--text-gray); margin: auto;">
                 <i class="fas fa-comments" style="font-size: 3rem; margin-bottom: 1rem; color: var(--border-color);"></i>
-                <p style="font-size: 1.1em; margin-bottom: .5rem;">No conversations yet.</p>
-                <p>When you and another user follow each other, you can start a chat from their profile page.</p>
+                <p style="font-size: 1.1em; margin-bottom: .5rem; color: var(--text-main);">Your Inbox is Empty</p>
+                <p>Follow a user back to start a conversation.</p>
             </div>
         {% endfor %}
     </div>
     
-    {# The `messages.html` template will fill this block with the chat window #}
-    {# On mobile, this will appear to slide in over the conversation list #}
-    {% block chat_window %}
-    <div class="chat-placeholder">
-        <i class="fas fa-envelope-open-text"></i>
-        <h2>Your Inbox</h2>
-        <p>Select a conversation from the left to start messaging.</p>
+    <!-- Right Panel: The active chat window will be injected here by messages.html -->
+    {% block chat_panel %}
+    <div class="chat-container">
+        <div class="chat-placeholder">
+            <i class="fas fa-envelope-open-text"></i>
+            <h2>Select a conversation</h2>
+            <p>Choose from the list on the left to start chatting.</p>
+        </div>
     </div>
     {% endblock %}
+
 </div>
 {% endblock %}
 
