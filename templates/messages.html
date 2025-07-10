@@ -3,17 +3,24 @@
 {% extends 'inbox.html' %}
 {% block title %}Chat with {{ other_user.first_name }}{% endblock %}
 
-{% block chat_window %}
-<div class="chat-window">
+{% block chat_panel %}
+<div class="chat-container">
     <div class="chat-header">
+        <!-- Back button for mobile navigation -->
         <a href="{{ url_for('inbox') }}" class="back-btn"><i class="fas fa-chevron-left"></i></a>
+        <!-- Clickable user info to view their profile -->
         <a href="{{ url_for('public_profile', voter_id=other_user.voter_id) }}">
              {% if other_user.profile_image_url %}
                 <img src="{{ other_user.profile_image_url }}" alt="{{ other_user.first_name }}'s profile picture">
             {% else %}
-                <div class="icon" style="background:var(--bg-card); border: 1px solid var(--border-color); color:var(--secondary);display:flex;align-items:center;justify-content:center; width:40px; height: 40px; border-radius:50%"><i class="fas fa-user"></i></div>
+                <div class="icon" style="background:var(--bg-card); border: 1px solid var(--border-color); color:var(--text-gray); display:flex; align-items:center; justify-content:center; width:40px; height: 40px; border-radius:50%;"><i class="fas fa-user"></i></div>
             {% endif %}
-            <h4>{{ other_user.first_name }} {{ other_user.last_name }}</h4>
+            <div style="line-height:1.2">
+                <h4 style="margin:0;">{{ other_user.first_name }} {{ other_user.last_name }}</h4>
+                <small id="status-text-{{ other_user.id }}" style="font-size:0.8em; color:var(--text-gray)">
+                    {% if other_user.id in online_users_list %}Online{% else %}Offline{% endif %}
+                </small>
+            </div>
         </a>
     </div>
 
@@ -23,9 +30,7 @@
             <p>{{ msg.text | safe }}</p>
         </div>
         {% else %}
-        <div class="server-message">
-            <p>This is the beginning of your conversation with {{ other_user.first_name }}.</p>
-        </div>
+        <div class="server-message">This is the beginning of your conversation with {{ other_user.first_name }}.</div>
         {% endfor %}
     </div>
 
@@ -42,37 +47,46 @@
 {{ super() }}
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    // On mobile, this class triggers the view to slide to the chat window
-    document.body.classList.add('chat-view-active');
-    
     const messageList = document.getElementById('message-list');
     const messageForm = document.getElementById('message-form');
     const messageInput = document.getElementById('message-input');
+    const otherUserStatus = document.getElementById('status-text-{{ other_user.id }}');
     const roomId = "{{ room_id }}";
     const currentUserId = {{ g.user.id }};
 
-    function scrollToBottom() {
-        if(messageList) messageList.scrollTop = messageList.scrollHeight;
+    function scrollToBottom(behavior = 'auto') {
+        if(messageList) messageList.scrollTo({ top: messageList.scrollHeight, behavior: behavior });
     }
-    scrollToBottom();
+    scrollToBottom(); // Jump to bottom on load
 
     socket.on('connect', () => {
         if(roomId) socket.emit('join_room', { room: roomId });
     });
+    
+    // Update online/offline status text in header
+    socket.on('user_status_change', data => {
+        if(data.user_id === {{ other_user.id }} && otherUserStatus) {
+            otherUserStatus.textContent = data.status === 'online' ? 'Online' : 'Offline';
+        }
+    });
 
     socket.on('receive_message', function(data) {
         if (!messageList) return;
-        const isScrolledToBottom = messageList.scrollHeight - messageList.clientHeight <= messageList.scrollTop + 50;
+        const isScrolledToBottom = messageList.scrollHeight - messageList.clientHeight <= messageList.scrollTop + 100;
+
         const messageDiv = document.createElement('div');
         messageDiv.classList.add('message', data.author_id === currentUserId ? 'sent' : 'received');
         const p = document.createElement('p');
-        p.textContent = data.text; // Using textContent is safer
+        p.textContent = data.text;
         messageDiv.appendChild(p);
         messageList.appendChild(messageDiv);
-        if(isScrolledToBottom) scrollToBottom();
         
         const placeholder = messageList.querySelector('.server-message');
         if(placeholder) placeholder.remove();
+
+        if(isScrolledToBottom) {
+             scrollToBottom('smooth');
+        }
     });
 
     if (messageForm) {
