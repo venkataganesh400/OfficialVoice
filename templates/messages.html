@@ -4,26 +4,16 @@
 {% block title %}Chat with {{ other_user.first_name }}{% endblock %}
 
 {% block chat_window %}
-{# This script switches the view on mobile by changing the body class #}
-<script>
-    document.body.classList.remove('inbox-page');
-    document.body.classList.add('chat-active');
-</script>
 <div class="chat-window">
     <div class="chat-header">
-        {# Back button for mobile navigation #}
         <a href="{{ url_for('inbox') }}" class="back-btn"><i class="fas fa-chevron-left"></i></a>
-
-        {# Clickable user info to go to their profile #}
-        <a href="{{ url_for('public_profile', voter_id=other_user.voter_id) }}" style="display: contents;">
-            {% if other_user.profile_image_url %}
+        <a href="{{ url_for('public_profile', voter_id=other_user.voter_id) }}">
+             {% if other_user.profile_image_url %}
                 <img src="{{ other_user.profile_image_url }}" alt="{{ other_user.first_name }}'s profile picture">
             {% else %}
-                <div class="icon" style="background:var(--bg-main);color:var(--secondary);display:flex;align-items:center;justify-content:center;"><i class="fas fa-user"></i></div>
+                <div class="icon" style="background:var(--bg-card); border: 1px solid var(--border-color); color:var(--secondary);display:flex;align-items:center;justify-content:center; width:40px; height: 40px; border-radius:50%"><i class="fas fa-user"></i></div>
             {% endif %}
-            <div class="chat-header-info">
-                <h4>{{ other_user.first_name }} {{ other_user.last_name }}</h4>
-            </div>
+            <h4>{{ other_user.first_name }} {{ other_user.last_name }}</h4>
         </a>
     </div>
 
@@ -34,15 +24,17 @@
         </div>
         {% else %}
         <div class="server-message">
-            <p>This is the beginning of your conversation with {{ other_user.first_name }}. Messages you send will appear here.</p>
+            <p>This is the beginning of your conversation with {{ other_user.first_name }}.</p>
         </div>
         {% endfor %}
     </div>
 
-    <form class="message-form" id="message-form">
-        <input type="text" id="message-input" placeholder="Type a message..." autocomplete="off" required>
-        <button type="submit" class="btn" title="Send message"><i class="fas fa-paper-plane"></i></button>
-    </form>
+    <div class="message-form-container">
+        <form class="message-form" id="message-form">
+            <input type="text" id="message-input" placeholder="Type a message..." autocomplete="off" required>
+            <button type="submit" class="btn" title="Send message"><i class="fas fa-paper-plane"></i></button>
+        </form>
+    </div>
 </div>
 {% endblock %}
 
@@ -50,47 +42,34 @@
 {{ super() }}
 <script>
 document.addEventListener('DOMContentLoaded', () => {
+    // On mobile, this class triggers the view to slide to the chat window
+    document.body.classList.add('chat-view-active');
+    
     const messageList = document.getElementById('message-list');
     const messageForm = document.getElementById('message-form');
     const messageInput = document.getElementById('message-input');
     const roomId = "{{ room_id }}";
     const currentUserId = {{ g.user.id }};
-    const socket = io();
 
     function scrollToBottom() {
-        if(messageList) {
-            messageList.scrollTop = messageList.scrollHeight;
-        }
+        if(messageList) messageList.scrollTop = messageList.scrollHeight;
     }
     scrollToBottom();
 
     socket.on('connect', () => {
-        if(roomId) {
-            socket.emit('join_room', { room: roomId });
-        }
+        if(roomId) socket.emit('join_room', { room: roomId });
     });
 
     socket.on('receive_message', function(data) {
         if (!messageList) return;
-
-        const isScrolledToBottom = messageList.scrollHeight - messageList.clientHeight <= messageList.scrollTop + 5;
-
+        const isScrolledToBottom = messageList.scrollHeight - messageList.clientHeight <= messageList.scrollTop + 50;
         const messageDiv = document.createElement('div');
-        messageDiv.classList.add('message');
-        if (data.author_id === currentUserId) {
-            messageDiv.classList.add('sent');
-        } else {
-            messageDiv.classList.add('received');
-        }
-
+        messageDiv.classList.add('message', data.author_id === currentUserId ? 'sent' : 'received');
         const p = document.createElement('p');
-        p.textContent = data.text; // Use textContent to safely insert text
+        p.textContent = data.text; // Using textContent is safer
         messageDiv.appendChild(p);
-        
         messageList.appendChild(messageDiv);
-        if(isScrolledToBottom) {
-            scrollToBottom();
-        }
+        if(isScrolledToBottom) scrollToBottom();
         
         const placeholder = messageList.querySelector('.server-message');
         if(placeholder) placeholder.remove();
@@ -107,12 +86,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
-    
-    window.addEventListener('beforeunload', () => {
-        if (roomId) {
-            socket.emit('leave_room', { room: roomId });
-        }
-    });
 });
 </script>
 {% endblock %}
