@@ -3,12 +3,14 @@
 {% extends 'base.html' %}
 {% block title %}Inbox{% endblock %}
 
-{% block page_class %}page-chat-layout {% if conversation_id %}chat-view-active{% endif %}{% endblock %}
+{# This class on `body` activates the entire app-style layout. #}
+{# The `chat-view-active` class is added if a conversation is open, which triggers the mobile slide. #}
+{% block page_class %}page-chat-app {% if conversation_id %}chat-view-active{% endif %}{% endblock %}
 
 {% block content %}
 <div class="inbox-layout">
     
-    <!-- Left Panel: List of all conversations -->
+    <!-- Panel 1: List of all conversations -->
     <div class="conversation-list">
         {% for conv in conversations %}
             {% set other_user = conv.user_two if conv.user_one_id == g.user.id else conv.user_one %}
@@ -28,8 +30,7 @@
                 </div>
 
                 <div class="online-indicator {% if other_user.id in online_users_list %}online{% endif %}"
-                     id="status-indicator-{{ other_user.id }}"
-                     title="{% if other_user.id in online_users_list %}Online{% else %}Offline{% endif %}">
+                     id="status-indicator-{{ other_user.id }}">
                 </div>
             </a>
         {% else %}
@@ -41,15 +42,15 @@
         {% endfor %}
     </div>
     
-    <!-- Right Panel: The active chat window will be injected here by messages.html -->
+    <!-- Panel 2: The chat window will be injected here by messages.html -->
     {% block chat_panel %}
-    <div class="chat-container">
-        <div class="chat-placeholder">
-            <i class="fas fa-envelope-open-text"></i>
-            <h2>Select a conversation</h2>
-            <p>Choose from the list on the left to start chatting.</p>
+        <div class="chat-container">
+            <div class="chat-placeholder">
+                <i class="fas fa-arrow-left"></i>
+                <h2>Select a conversation</h2>
+                <p>Choose from the list to start chatting.</p>
+            </div>
         </div>
-    </div>
     {% endblock %}
 
 </div>
@@ -59,12 +60,11 @@
 {{ super() }}
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    // This script handles the real-time online status indicators.
+    // This script only needs to handle the real-time online status indicators now.
     const socket = io();
     socket.on('user_status_change', data => {
         document.querySelectorAll(`#status-indicator-${data.user_id}`).forEach(indicator => {
             indicator.classList.toggle('online', data.status === 'online');
-            indicator.title = data.status === 'online' ? 'Online' : 'Offline';
         });
     });
 });
