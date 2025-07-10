@@ -1,4 +1,4 @@
---- START OF FILE style.css ---
+
 
 :root{--primary:#4f46e5;--secondary:#1f2937;--accent-red:#dc2626;--accent-yellow:#f59e0b;--bg-main:#f3f4f6;--bg-card:#fff;--text-main:#111827;--text-light:#f9fafb;--text-gray:#4b5563;--border-color:#e5e7eb;--shadow-md:0 4px 6px -1px #00000012}
 html[data-theme=dark]{--primary:#6366f1;--secondary:#94a3b8;--accent-red:#f87171;--accent-yellow:#facc15;--bg-main:#1e293b;--bg-card:#334155;--text-main:#f1f5f9;--text-light:#f9fafb;--text-gray:#cbd5e1;--border-color:#475569;--shadow-md:0 4px 6px -1px #00000033}
