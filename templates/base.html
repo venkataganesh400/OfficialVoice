@@ -1,3 +1,5 @@
+--- START OF FILE base.html ---
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -22,7 +24,7 @@
         .mobile-nav-links a .fa-fw { font-size: 1.2em; }
     </style>
 </head>
-<body>
+<body class="{% block page_class %}{% endblock %}">
     <header class="main-header">
         <div class="container header-container">
             <a href="{{ url_for('home') }}" class="logo" id="logo-link"><i class="fas fa-fingerprint"></i><span>Official Voice</span></a>
