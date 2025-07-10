@@ -1,40 +1,34 @@
 
-
 {% extends 'inbox.html' %}
 {% block title %}Chat with {{ other_user.first_name }}{% endblock %}
 
 {% block chat_panel %}
 <div class="chat-container">
-    <!-- Item 1: The Header -->
     <div class="chat-header">
-        <a href="{{ url_for('inbox') }}" class="back-btn"><i class="fas fa-chevron-left"></i></a>
-        <a href="{{ url_for('public_profile', voter_id=other_user.voter_id) }}">
-             {% if other_user.profile_image_url %}
-                <img src="{{ other_user.profile_image_url }}" alt="{{ other_user.first_name }}'s profile picture">
+        <a href="{{ url_for('inbox') }}" class="back-btn" aria-label="Back to conversations"><i class="fas fa-chevron-left"></i></a>
+        <a href="{{ url_for('public_profile', voter_id=other_user.voter_id) }}" style="display: flex; align-items: center; gap: 1rem; flex-grow: 1; text-decoration: none; color: inherit;">
+            {% if other_user.profile_image_url %}
+                <img src="{{ other_user.profile_image_url }}" alt="{{ other_user.first_name }}'s profile picture" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
             {% else %}
                 <div class="icon" style="background:var(--bg-card); border: 1px solid var(--border-color); color:var(--text-gray); display:flex; align-items:center; justify-content:center; width:40px; height: 40px; border-radius:50%;"><i class="fas fa-user"></i></div>
             {% endif %}
             <div>
-                <h4>{{ other_user.first_name }} {{ other_user.last_name }}</h4>
-                <small id="status-text-{{ other_user.id }}">
+                <h4 style="margin: 0; line-height: 1.2;">{{ other_user.first_name }} {{ other_user.last_name }}</h4>
+                <small id="status-text-{{ other_user.id }}" style="font-size:0.8em; color:var(--text-gray)">
                     {% if other_user.id in online_users_list %}Online{% else %}Offline{% endif %}
                 </small>
             </div>
         </a>
     </div>
 
-    <!-- Item 2: The Scrollable Message List -->
     <div class="message-list" id="message-list">
         {% for msg in messages %}
-        <div class="message {% if msg.user_id == g.user.id %}sent{% else %}received{% endif %}">
-            <p>{{ msg.text | safe }}</p>
-        </div>
+            {% include '_message_bubble.html' %}
         {% else %}
-        <div class="server-message">This is the beginning of your conversation.</div>
+            <div class="server-message">This is the beginning of your conversation.</div>
         {% endfor %}
     </div>
 
-    <!-- Item 3: The Input Form Container -->
     <div class="message-form-container">
         <form class="message-form" id="message-form">
             <input type="text" id="message-input" placeholder="Type a message..." autocomplete="off" required>
@@ -48,48 +42,77 @@
 {{ super() }}
 <script>
 document.addEventListener('DOMContentLoaded', () => {
+    // Standard chat setup
     const messageList = document.getElementById('message-list');
     const messageForm = document.getElementById('message-form');
     const messageInput = document.getElementById('message-input');
-    const otherUserStatus = document.getElementById('status-text-{{ other_user.id }}');
     const roomId = "{{ room_id }}";
     const currentUserId = {{ g.user.id }};
+    const socket = io();
 
     function scrollToBottom(behavior = 'auto') {
         if(messageList) messageList.scrollTo({ top: messageList.scrollHeight, behavior: behavior });
     }
-    scrollToBottom(); // Instant scroll on page load
+    scrollToBottom(); // Instant scroll on load
 
-    socket.on('connect', () => {
-        if(roomId) socket.emit('join_room', { room: roomId });
-    });
-    
-    // Update online/offline status text in header
-    socket.on('user_status_change', data => {
-        if(data.user_id === {{ other_user.id }} && otherUserStatus) {
-            otherUserStatus.textContent = data.status === 'online' ? 'Online' : 'Offline';
-        }
-    });
+    // Socket listeners
+    socket.on('connect', () => { if(roomId) socket.emit('join_room', { room: roomId }); });
 
     socket.on('receive_message', function(data) {
-        if (!messageList) return;
-        // Check if user is scrolled near the bottom before auto-scrolling
-        const isScrolledToBottom = messageList.scrollHeight - messageList.clientHeight <= messageList.scrollTop + 100;
+        const isScrolledToBottom = messageList.scrollHeight - messageList.clientHeight <= messageList.scrollTop + 150;
 
-        const messageDiv = document.createElement('div');
-        messageDiv.classList.add('message', data.author_id === currentUserId ? 'sent' : 'received');
+        // NEW: JS logic for grouping and creating bubbles
+        const lastMessage = messageList.querySelector('.message-container:last-of-type');
+        let isGrouped = lastMessage && lastMessage.dataset.authorId == data.author_id;
+
+        // Create new elements from scratch for full control
+        const msgContainer = document.createElement('div');
+        msgContainer.classList.add('message-container', 'is-new');
+        msgContainer.dataset.authorId = data.author_id;
+
+        const msgBubble = document.createElement('div');
+        msgBubble.classList.add('message-bubble');
+
+        if (data.author_id === currentUserId) {
+            msgContainer.classList.add('sent');
+        } else {
+            msgContainer.classList.add('received');
+            // Add author name only if it's a new, ungrouped message
+            if (!isGrouped) {
+                const authorDiv = document.createElement('div');
+                authorDiv.className = 'message-author';
+                authorDiv.textContent = data.author_name;
+                msgContainer.appendChild(authorDiv);
+            }
+        }
+        
+        if (isGrouped) msgContainer.classList.add('is-grouped');
+
         const p = document.createElement('p');
         p.textContent = data.text;
-        messageDiv.appendChild(p);
-        messageList.appendChild(messageDiv);
-        
-        const placeholder = messageList.querySelector('.server-message');
-        if(placeholder) placeholder.remove();
+        msgBubble.appendChild(p);
 
-        // Only scroll if the user was already at the bottom, so we don't interrupt them reading history
-        if(isScrolledToBottom) {
-             scrollToBottom('smooth');
+        // Add metadata to sent messages
+        if (data.author_id === currentUserId) {
+            const metaDiv = document.createElement('div');
+            metaDiv.className = 'message-meta';
+            const timeSpan = document.createElement('span');
+            timeSpan.className = 'timestamp';
+            timeSpan.textContent = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+            metaDiv.appendChild(timeSpan);
+            const checkI = document.createElement('i');
+            checkI.className = 'fas fa-check-double read-receipt';
+            metaDiv.appendChild(checkI);
+            msgBubble.appendChild(metaDiv);
         }
+
+        msgContainer.appendChild(msgBubble);
+        messageList.appendChild(msgContainer);
+
+        const placeholder = messageList.querySelector('.server-message');
+        if (placeholder) placeholder.remove();
+
+        if (isScrolledToBottom) scrollToBottom('smooth');
     });
 
     if (messageForm) {
