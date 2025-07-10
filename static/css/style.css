@@ -149,81 +149,149 @@ html[data-theme=dark] .alert-warning{background-color:#78350f;color:#fef08a;bord
 .notification-list-item p{margin:0}
 
 /* =================================
-   MESSAGING STYLES (v4 - PRO APP LAYOUT)
+   MESSAGING STYLES (v5 - THE DEFINITIVE FIX)
 ==================================== */
 
-/* --- Page-level setup for an app-like feel --- */
-.page-chat-layout { overflow: hidden; height: 100vh; }
-.page-chat-layout .main-header { position: sticky; top: 0; z-index: 100; }
-.page-chat-layout #main-content { padding: 0 !important; height: calc(100vh - 65px); } /* 65px is approx header height */
-.page-chat-layout .main-footer { display: none; }
-
-/* --- Desktop Grid Layout --- */
-.inbox-layout { display: grid; grid-template-columns: 350px 1fr; height: 100%; width: 100%; }
-.poll-chat-layout { display: grid; grid-template-columns: 1fr 300px; height: 100%; width: 100%; }
-
-/* --- Left Panel: Conversation List --- */
-.conversation-list { display: flex; flex-direction: column; overflow-y: auto; border-right: 1px solid var(--border-color); background-color: var(--bg-card); }
-.conversation-list-item { display: flex; align-items: center; gap: .8rem; padding: 1rem; text-decoration: none; color: var(--text-main); border-left: 4px solid transparent; transition: background-color .2s; }
-.conversation-list-item:hover { background-color: var(--bg-main); }
-.conversation-list-item.active { border-left-color: var(--primary); background: var(--bg-main); }
-.conversation-list-item img, .conversation-list-item .icon { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
-.conversation-details { flex-grow: 1; min-width: 0; }
-.conversation-details strong { font-size: 1rem; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.conversation-details small { font-size: .85em; color: var(--text-gray); }
-.online-indicator { width: 10px; height: 10px; background: var(--accent-red); border-radius: 50%; transition: background .3s; }
-.online-indicator.online { background: #16a34a; }
-
-/* --- Right Panel: Chat Window --- */
-.chat-container { display: flex; flex-direction: column; height: 100%; background-color: var(--bg-main); }
-.chat-placeholder { flex-grow: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: var(--text-gray); }
-.chat-placeholder i { font-size: 4rem; margin-bottom: 1rem; color: var(--border-color); }
-.chat-header { flex-shrink: 0; display: flex; align-items: center; gap: 1rem; padding: .8rem 1.2rem; border-bottom: 1px solid var(--border-color); background: var(--bg-card); z-index: 10; box-shadow: 0 1px 3px #0000000a; }
-.chat-header .back-btn { display: none; }
-.chat-header img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
-.chat-header h4 { margin: 0; font-size: 1.1rem; }
-.chat-header a { color: var(--text-main); text-decoration: none; display: flex; align-items: center; gap: 1rem;}
-.chat-header a:hover h4 { color: var(--primary); }
-
-.message-list { flex-grow: 1; overflow-y: auto; padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
-.message { max-width: 70%; width: fit-content; padding: .75rem 1.2rem; border-radius: 1.5rem; line-height: 1.4; word-wrap: break-word; }
-.message p { margin: 0; font-size: 0.95rem; }
-.message.sent { background: var(--primary); color: var(--text-light); align-self: flex-end; border-bottom-right-radius: .4rem; }
-.message.received { background: var(--bg-card); color: var(--text-main); align-self: flex-start; border: 1px solid var(--border-color); border-bottom-left-radius: .4rem; box-shadow: 0 1px 2px #00000008; }
-.message-author { font-size: 0.8rem; margin-bottom: 0.25rem; font-weight: 700; color: var(--primary); }
-.server-message { align-self: center; text-align:center; color:var(--text-gray); font-size:0.85em; margin: 1rem 0; padding: .5rem 1rem; background: var(--bg-card); border-radius: 99px; }
-
-.message-form-container { flex-shrink: 0; padding: 1rem; background-color: transparent; }
-.message-form { display: flex; align-items: center; gap: .75rem; padding: .5rem; border: 1.5px solid var(--border-color); background: var(--bg-card); border-radius: 1.5rem; transition: all 0.2s ease-in-out; }
-.message-form:focus-within { border-color: var(--primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent); }
-.message-form input { flex-grow: 1; font-size: 1rem; border: none; background: transparent; color: var(--text-main); padding: .6rem; outline: none; }
-.message-form .btn { flex-shrink: 0; width: 42px; height: 42px; padding: 0; font-size: 1.1rem; border-radius: 50%; }
-
-/* --- Poll Chat Specifics --- */
-.participant-list { background: var(--bg-card); border-left: 1px solid var(--border-color); padding: 1rem; overflow-y: auto; }
-.participant-item span a:hover { color: var(--primary); }
-
-/* --- Mobile App-like View (Most Important Changes Here) --- */
-@media (max-width: 768px) {
-    .page-chat-layout #main-content { overflow-x: hidden; position: relative; }
-    .inbox-layout { grid-template-columns: 100%; display: block; position: static; }
-
-    /* The two main panels (list and chat) are absolutely positioned to allow for a hardware-accelerated slide transition */
-    .conversation-list { width: 100%; height: 100%; position: absolute; top: 0; left: 0; transform: translateX(0); transition: transform 0.35s ease-in-out; z-index: 20; border-right: none; }
-    .chat-container { width: 100%; height: 100%; position: absolute; top: 0; left: 0; transform: translateX(100%); transition: transform 0.35s ease-in-out; z-index: 10; }
-
-    /* When a chat is active, slide the list left and the chat window in */
-    .chat-view-active .conversation-list { transform: translateX(-100%); }
-    .chat-view-active .chat-container { transform: translateX(0); z-index: 30; }
-
-    /* The back button is crucial for mobile navigation */
-    .chat-header .back-btn { display: block; font-size: 1.2rem; color: var(--text-main); margin-right: .5rem; }
-
-    /* Poll chat mobile view specifics */
-    .poll-chat-layout { display: block; }
-    .participant-list { display: none; }
+/* --- Page-level setup to create a self-contained "app" view --- */
+/* This is activated by adding `.page-chat-app` to the body tag */
+body.page-chat-app {
+    height: 100vh; /* Set a fixed height based on the viewport */
+    overflow: hidden; /* Prevent the body itself from scrolling */
+}
+/* The main content area will take up all available vertical space */
+body.page-chat-app #main-content {
+    height: calc(100% - 65px); /* Full height of parent (body) minus header */
+    padding: 0 !important;
+}
+/* We don't need a footer in this app-like view */
+body.page-chat-app .main-footer {
+    display: none;
 }
 
+
+/* --- The two-panel grid layout for the chat interface --- */
+.inbox-layout {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    height: 100%;
+}
+
+/* --- Left Panel: Conversation List Styling --- */
+.conversation-list {
+    background-color: var(--bg-card);
+    border-right: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+}
+.conversation-list-item {
+    display: flex; align-items: center; gap: 0.8rem; padding: 1rem;
+    text-decoration: none; color: var(--text-main);
+    border-left: 4px solid transparent; transition: background-color 0.2s;
+}
+.conversation-list-item:hover { background-color: var(--bg-main); }
+.conversation-list-item.active { background-color: var(--bg-main); border-left-color: var(--primary); }
+.conversation-list-item img, .conversation-list-item .icon { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+.conversation-details { flex-grow: 1; min-width: 0; }
+.conversation-details strong { font-size: 0.95rem; font-weight: 600; }
+.conversation-details small { font-size: 0.85rem; color: var(--text-gray); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+.online-indicator { width: 10px; height: 10px; background: #ddd; border-radius: 50%; }
+.online-indicator.online { background: #16a34a; }
+
+
+/* --- Right Panel: Chat Window Core Layout (THE MOST IMPORTANT PART) --- */
+/* This Flexbox container is the key to the entire layout working correctly. */
+.chat-container {
+    display: flex;
+    flex-direction: column; /* Stacks children vertically */
+    height: 100%;             /* Fills its parent grid cell */
+    background-color: var(--bg-main);
+}
+.chat-placeholder {
+    flex-grow: 1; /* This makes it fill the space like the message list would */
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    text-align: center; color: var(--text-gray);
+}
+.chat-placeholder i { font-size: 4rem; color: var(--border-color); margin-bottom: 1rem; }
+
+/* Flex Item 1: The header. It does not grow or shrink. */
+.chat-header {
+    flex-shrink: 0;
+    display: flex; align-items: center; gap: 1rem;
+    padding: 0.7rem 1.2rem;
+    background-color: var(--bg-card);
+    border-bottom: 1px solid var(--border-color);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+}
+.chat-header .back-btn { display: none; }
+.chat-header h4 { font-size: 1.05rem; margin-bottom: 0; }
+.chat-header small { color: var(--text-gray); font-size: 0.8rem; line-height: 1; }
+.chat-header img { width: 40px; height: 40px; border-radius: 50%; }
+.chat-header a { text-decoration: none; color: var(--text-main); }
+
+
+/* Flex Item 2: The message list. It grows to fill all available space. */
+.message-list {
+    flex-grow: 1;
+    overflow-y: auto; /* CRITICAL: Only this element scrolls */
+    padding: 1.5rem;
+    display: flex; flex-direction: column; gap: 1rem;
+}
+.message {
+    max-width: 75%; width: fit-content;
+    padding: 0.6rem 1.1rem; border-radius: 1.25rem; line-height: 1.45;
+}
+.message.sent { align-self: flex-end; background-color: var(--primary); color: var(--text-light); border-bottom-right-radius: 0.4rem; }
+.message.received { align-self: flex-start; background-color: var(--bg-card); border: 1px solid var(--border-color); border-bottom-left-radius: 0.4rem; }
+.message p { margin: 0; font-size: 0.95rem; word-wrap: break-word; }
+.message-author { font-size: 0.8rem; margin-bottom: 0.25rem; font-weight: 700; color: var(--primary); }
+.server-message { align-self: center; background-color: var(--bg-card); padding: 0.4rem 1rem; border-radius: 99px; font-size: 0.8rem; }
+
+
+/* Flex Item 3: The form. It does not grow or shrink. */
+.message-form-container {
+    flex-shrink: 0;
+    padding: 0.75rem 1rem;
+    background-color: var(--bg-main);
+    border-top: 1px solid var(--border-color);
+}
+.message-form {
+    display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem;
+    border: 1.5px solid transparent; background: var(--bg-card);
+    border-radius: 1.5rem; transition: border-color 0.2s, box-shadow 0.2s;
+    border-color: var(--border-color);
+}
+.message-form:focus-within {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 20%, transparent);
+}
+.message-form input { flex-grow: 1; font-size: 1rem; border: none; background: transparent; color: var(--text-main); padding: 0.5rem; outline: none; }
+.message-form .btn { flex-shrink: 0; width: 38px; height: 38px; font-size: 1rem; border-radius: 50%; padding: 0; }
+
+/* --- Mobile Sliding Panels Logic --- */
+@media (max-width: 768px) {
+    body.page-chat-app #main-content { overflow-x: hidden; position: relative; }
+    .inbox-layout { grid-template-columns: 100%; display: block; }
+    .conversation-list { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform: translateX(0); transition: transform 0.35s ease-in-out; z-index: 20; border: none;}
+    .chat-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform: translateX(100%); transition: transform 0.35s ease-in-out; z-index: 10; }
+
+    /* This class on the body triggers the slide animation */
+    body.chat-view-active .conversation-list { transform: translateX(-100%); }
+    body.chat-view-active .chat-container { transform: translateX(0); z-index: 30; }
+
+    /* The back button is required for mobile navigation */
+    .chat-header .back-btn { display: block; font-size: 1.2rem; color: var(--text-main); padding-right: 0.5rem; }
+}
+
+
+/* --- Poll Chat specific styles (mainly hiding the side panel on mobile) --- */
+.poll-chat-layout { display: grid; grid-template-columns: 1fr 280px; height: 100%; }
+.participant-list { background-color: var(--bg-card); border-left: 1px solid var(--border-color); padding: 1rem; overflow-y: auto; }
+@media (max-width: 992px) {
+    .poll-chat-layout { display: block; } /* Reverts to single column */
+    .participant-list { display: none; }
+    .inbox-layout { grid-template-columns: 280px 1fr; }
+}
 
 /* =================================
    PASSWORD VISIBILITY TOGGLE
