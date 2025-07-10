@@ -1,13 +1,23 @@
+
+
 {% extends 'inbox.html' %}
 {% block title %}Chat with {{ other_user.first_name }}{% endblock %}
 
 {% block chat_window %}
+{# This script switches the view on mobile by changing the body class #}
+<script>
+    document.body.classList.remove('inbox-page');
+    document.body.classList.add('chat-active');
+</script>
 <div class="chat-window">
     <div class="chat-header">
+        {# Back button for mobile navigation #}
         <a href="{{ url_for('inbox') }}" class="back-btn"><i class="fas fa-chevron-left"></i></a>
-        <a href="{{ url_for('public_profile', voter_id=other_user.voter_id) }}" style="display: contents; text-decoration: none; color: inherit;">
+
+        {# Clickable user info to go to their profile #}
+        <a href="{{ url_for('public_profile', voter_id=other_user.voter_id) }}" style="display: contents;">
             {% if other_user.profile_image_url %}
-                <img src="{{ other_user.profile_image_url }}" alt="">
+                <img src="{{ other_user.profile_image_url }}" alt="{{ other_user.first_name }}'s profile picture">
             {% else %}
                 <div class="icon" style="background:var(--bg-main);color:var(--secondary);display:flex;align-items:center;justify-content:center;"><i class="fas fa-user"></i></div>
             {% endif %}
@@ -20,14 +30,11 @@
     <div class="message-list" id="message-list">
         {% for msg in messages %}
         <div class="message {% if msg.user_id == g.user.id %}sent{% else %}received{% endif %}">
-            <div class="message-bubble">{{ msg.text | safe }}</div>
-            <div class="message-meta">
-                <span title="{{ msg.timestamp.strftime('%Y-%m-%d %H:%M:%S UTC') }}">{{ moment(msg.timestamp).fromNow() }}</span>
-            </div>
+            <p>{{ msg.text | safe }}</p>
         </div>
         {% else %}
-        <div style="margin: auto; text-align: center; color: var(--text-gray);">
-            <p>This is the beginning of your conversation with {{ other_user.first_name }}.</p>
+        <div class="server-message">
+            <p>This is the beginning of your conversation with {{ other_user.first_name }}. Messages you send will appear here.</p>
         </div>
         {% endfor %}
     </div>
@@ -41,5 +48,71 @@
 
 {% block scripts %}
 {{ super() }}
-{% include 'js_snippets/chat_scripts.html' %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const messageList = document.getElementById('message-list');
+    const messageForm = document.getElementById('message-form');
+    const messageInput = document.getElementById('message-input');
+    const roomId = "{{ room_id }}";
+    const currentUserId = {{ g.user.id }};
+    const socket = io();
+
+    function scrollToBottom() {
+        if(messageList) {
+            messageList.scrollTop = messageList.scrollHeight;
+        }
+    }
+    scrollToBottom();
+
+    socket.on('connect', () => {
+        if(roomId) {
+            socket.emit('join_room', { room: roomId });
+        }
+    });
+
+    socket.on('receive_message', function(data) {
+        if (!messageList) return;
+
+        const isScrolledToBottom = messageList.scrollHeight - messageList.clientHeight <= messageList.scrollTop + 5;
+
+        const messageDiv = document.createElement('div');
+        messageDiv.classList.add('message');
+        if (data.author_id === currentUserId) {
+            messageDiv.classList.add('sent');
+        } else {
+            messageDiv.classList.add('received');
+        }
+
+        const p = document.createElement('p');
+        p.textContent = data.text; // Use textContent to safely insert text
+        messageDiv.appendChild(p);
+        
+        messageList.appendChild(messageDiv);
+        if(isScrolledToBottom) {
+            scrollToBottom();
+        }
+        
+        const placeholder = messageList.querySelector('.server-message');
+        if(placeholder) placeholder.remove();
+    });
+
+    if (messageForm) {
+        messageForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const text = messageInput.value.trim();
+            if (text && roomId) {
+                socket.emit('send_message', { text: text, room: roomId });
+                messageInput.value = '';
+                messageInput.focus();
+            }
+        });
+    }
+    
+    window.addEventListener('beforeunload', () => {
+        if (roomId) {
+            socket.emit('leave_room', { room: roomId });
+        }
+    });
+});
+</script>
 {% endblock %}
