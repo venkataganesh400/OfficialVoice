@@ -1,0 +1,42 @@
+{% comment %}
+This partial template handles all the complex logic for displaying a single message.
+- `msg`: The message object.
+- `loop`: The Jinja loop context, which is essential for checking the previous message.
+{% endcomment %}
+
+{# 1. Check if we need to add a date divider #}
+{% if loop.first or msg.timestamp.date() != loop.previtem.timestamp.date() %}
+    <div class="date-divider">
+        <span>{{ msg.timestamp.strftime('%B %d, %Y') }}</span>
+    </div>
+{% endif %}
+
+{# 2. Check if this message should be visually grouped with the previous one #}
+{% set is_grouped = not loop.first and 
+                    msg.user_id == loop.previtem.user_id and 
+                    (msg.timestamp - loop.previtem.timestamp).total_seconds() < 180 %}
+
+{# 3. Determine if the user is the sender #}
+{% set is_sender = msg.user_id == g.user.id %}
+
+{# 4. Render the message container with appropriate classes #}
+<div class="message-container {{ 'sent' if is_sender else 'received' }} {{ 'is-grouped' if is_grouped else '' }}" data-author-id="{{ msg.user_id }}">
+    
+    {% if not is_sender and not is_grouped %}
+        <div class="message-author">
+             <a href="{{ url_for('public_profile', voter_id=msg.author.voter_id) }}" class="author-link">
+                {{ msg.author.first_name }}
+             </a>
+        </div>
+    {% endif %}
+
+    <div class="message-bubble">
+        <p class="message-text">{{ msg.text | safe }}</p>
+        <div class="message-meta">
+            <span class="timestamp">{{ msg.timestamp.strftime('%-I:%M %p') }}</span>
+            {% if is_sender %}
+                <i class="fas fa-check-double read-receipt"></i>
+            {% endif %}
+        </div>
+    </div>
+</div>
