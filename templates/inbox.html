@@ -1,44 +1,31 @@
+--- START OF FILE inbox.html ---
+
 {% extends 'base.html' %}
 {% block title %}Inbox{% endblock %}
 
 {% block content %}
-<style>
-.inbox-container { max-width: 1200px; margin: 2rem auto; }
-.inbox-layout { display: grid; grid-template-columns: 300px 1fr; height: calc(100vh - 120px); gap: 1rem; }
-.conversation-list { background: var(--bg-card); border-radius: .5rem; overflow-y: auto; padding: .5rem; display: flex; flex-direction: column;}
-.conversation-list-item { display: flex; align-items: center; gap: .8rem; padding: .8rem; border-radius: .5rem; text-decoration: none; color: var(--text-main); border-left: 4px solid transparent; }
-.conversation-list-item:hover { background: var(--bg-main); }
-.conversation-list-item.active { border-left-color: var(--primary); background: var(--bg-main); }
-.conversation-list-item img, .conversation-list-item .icon { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; flex-shrink: 0;}
-.conversation-list-item .icon { font-size: 1.5rem; background: var(--bg-main); color: var(--secondary); display: flex; align-items: center; justify-content: center; }
-.conversation-details { flex: 1; min-width: 0; }
-.conversation-details strong { font-size: 1rem; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.conversation-details small { font-size: .8em; color: var(--text-gray); }
-.online-indicator { width: 10px; height: 10px; background: #dc2626; border-radius: 50%; transition: background .3s; }
-.online-indicator.online { background: #16a34a; }
-.chat-placeholder { background: var(--bg-card); border-radius: .5rem; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: var(--text-gray); }
-.chat-placeholder i { font-size: 4rem; margin-bottom: 1rem; color: var(--border-color); }
-@media (max-width: 768px) { .inbox-layout { display: block; height: auto; } .chat-placeholder { display: none; } }
-</style>
+{# Add a class to body for mobile view switching #}
+<script>document.body.classList.add('inbox-page');</script>
 
 <div class="inbox-container">
     <div class="inbox-layout">
-        <div class="conversation-list">
+        <div class="conversation-list" id="conversation-list-panel">
             {% for conv in conversations %}
                 {% set other_user = conv.user_two if conv.user_one_id == g.user.id else conv.user_one %}
+                {# The entire list item is a link, for better mobile experience #}
                 <a href="{{ url_for('start_or_get_conversation', user_id=other_user.id) }}" 
                    class="conversation-list-item {% if conversation_id and conversation_id == conv.id %}active{% endif %}"
                    id="conversation-user-{{ other_user.id }}">
                     
                     {% if other_user.profile_image_url %}
-                        <img src="{{ other_user.profile_image_url }}" alt="">
+                        <img src="{{ other_user.profile_image_url }}" alt="{{ other_user.first_name }}'s profile picture">
                     {% else %}
                         <div class="icon"><i class="fas fa-user"></i></div>
                     {% endif %}
 
                     <div class="conversation-details">
                         <strong>{{ other_user.first_name }} {{ other_user.last_name }}</strong>
-                        <small>Last active: {{ moment(conv.last_message_timestamp).calendar() }}</small>
+                        <small>Last message: {{ moment(conv.last_message_timestamp).calendar() }}</small>
                     </div>
 
                     <div class="online-indicator {% if other_user.id in online_users_list %}online{% endif %}"
@@ -47,15 +34,19 @@
                     </div>
                 </a>
             {% else %}
-                <div style="text-align:center; padding: 2rem; color: var(--text-gray);">No conversations yet. Find a user profile and send them a message!</div>
+                <div style="text-align:center; padding: 2rem; color: var(--text-gray);">
+                    <p style="font-size: 1.1em; margin-bottom: .5rem;">No conversations yet.</p>
+                    <p>When you and another user follow each other, you can message them from their profile page.</p>
+                </div>
             {% endfor %}
         </div>
         
+        {# This block is filled by messages.html on desktop, or shows a placeholder. On mobile, it's hidden by default. #}
         {% block chat_window %}
         <div class="chat-placeholder">
             <i class="fas fa-comments"></i>
             <h2>Welcome to your Inbox</h2>
-            <p>Select a conversation from the left to start messaging.</p>
+            <p>Select a conversation to start messaging.</p>
         </div>
         {% endblock %}
     </div>
@@ -63,15 +54,20 @@
 {% endblock %}
 
 {% block scripts %}
+{{ super() }}
 <script>
-    const socket = io();
-    socket.on('user_status_change', data => {
-        document.querySelectorAll(`#status-indicator-${data.user_id}`).forEach(indicator => {
-            if (indicator) {
+document.addEventListener('DOMContentLoaded', () => {
+    // This script is for the main inbox view to show user online status.
+    // It avoids running on the active chat view on mobile.
+    if (document.body.classList.contains('inbox-page')) {
+        const socket = io();
+        socket.on('user_status_change', data => {
+            document.querySelectorAll(`#status-indicator-${data.user_id}`).forEach(indicator => {
                 indicator.classList.toggle('online', data.status === 'online');
                 indicator.title = data.status === 'online' ? 'Online' : 'Offline';
-            }
+            });
         });
-    });
+    }
+});
 </script>
 {% endblock %}
